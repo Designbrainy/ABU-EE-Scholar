@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EE Scholer AI</title>
+<link rel="icon" href="/assets/profile.jpg" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+<meta name="theme-color" content="#0b0b0f" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="EE Scholer AI" />
+<link rel="stylesheet" href="/css/style.css" />
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+</script>
+</head>
+<body>
+
+<!-- SPLASH / LOADING SCREEN -->
+<div id="splash">
+  <img class="splash-logo" src="/assets/profile.jpg" alt="EE Scholer AI logo" />
+  <h2>EE SCHOLER AI</h2>
+  <p id="splashLine">Initializing AI Engine...</p>
+  <div class="splash-bar"><div id="splashFill"></div></div>
+  <p class="splash-status"><span id="splashPercent">0</span>%</p>
+</div>
+
+<!-- GATE SCREEN -->
+<div id="gate">
+  <img class="big-logo" src="/assets/profile.jpg" alt="EE Scholer AI logo" />
+  <h1>EE SCHOLER AI</h1>
+  <p class="tag">Your Personal AI Tutor for Electrical Engineering Students</p>
+
+  <div class="quick-tools">
+    <button id="gpaToolBtn" class="secondary small">📊 GPA / CGPA Calculator</button>
+    <a class="button-link secondary small" href="/downloads/ee-scholer-ai-web-app.zip" download>⬇ Download Web App</a>
+  </div>
+
+  <button id="guestBtn">Start Chatting Now (Guest — no account needed)</button>
+  <p class="divider">— or create a permanent account —</p>
+
+  <div class="tabs">
+    <button id="tabLogin" class="active">Log In</button>
+    <button id="tabSignup">Sign Up</button>
+  </div>
+
+  <form id="loginForm">
+    <input id="loginReg" placeholder="Registration number (e.g. u22ee1234)" autocomplete="username" />
+    <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+    <button type="submit" id="loginSubmit">Log In</button>
+  </form>
+
+  <form id="signupForm" class="hidden">
+    <input id="suName" placeholder="Full name" autocomplete="name" />
+    <input id="suReg" placeholder="Registration number (e.g. u22ee1234)" autocomplete="off" />
+    <div class="row">
+      <select id="suLevel">
+        <option value="100">100 Level</option>
+        <option value="200">200 Level</option>
+        <option value="300">300 Level</option>
+        <option value="400">400 Level</option>
+        <option value="500">500 Level</option>
+      </select>
+      <select id="suSemester">
+        <option>First Semester</option>
+        <option>Second Semester</option>
+      </select>
+    </div>
+    <p class="footnote">Select the course(s) you're offering:</p>
+    <div id="courseCheckList"></div>
+    <p class="footnote">Don't see your course? Add its code:</p>
+    <div class="row">
+      <input id="suCustomCode" placeholder="e.g. EEEN405" />
+      <button type="button" id="addCustomCourseBtn" class="secondary" style="flex:0 0 auto;">Add</button>
+    </div>
+    <div id="customAddedList" class="footnote"></div>
+    <input id="suPassword" type="password" placeholder="Create a password" autocomplete="new-password" />
+    <input id="suConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+    <button type="submit" id="signupSubmit">Create Account</button>
+  </form>
+
+  <p class="footnote">Your account is saved permanently on the server — no signup limit, no message limit.</p>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app">
+  <header>
+    <img id="appLogo" class="logo" src="/assets/profile.jpg" alt="EE Scholer AI logo" />
+    <div class="title">
+      <h1>EE SCHOLER AI</h1>
+      <p id="userLine">AI tutor for ABU Zaria Electrical Engineering</p>
+    </div>
+    <img id="userAvatar" class="avatar hidden" src="/assets/profile.jpg" alt="Profile" title="View profile" />
+    <button id="voiceToolBtn" class="secondary" title="Voice Tutor">🎙️</button>
+    <button id="logoutBtn" class="secondary">Log out</button>
+    <button id="gpaToolBtn2" class="secondary">📊 GPA</button>
+    <a class="button-link secondary" href="/downloads/ee-scholer-ai-web-app.zip" download>⬇ Download</a>
+  </header>
+
+  <div id="announcementsBanner" class="hidden"></div>
+
+  <div id="courseBar">
+    <select id="courseSelect"></select>
+  </div>
+
+  <div id="adminPanel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:13px;">🛡 Admin Control Room</strong>
+      <button id="closeAdminPanel" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <select id="adminCourseSelect"></select>
+    <div class="row" style="margin-top:8px;">
+      <input id="adminCustomCode" placeholder="Or type any course code, press Enter" />
+    </div>
+    <p class="footnote">Managing: <strong id="managingLabel" style="color:#22c55e;"></strong></p>
+    <form id="addMaterialForm" style="display:flex; flex-direction:column; gap:8px; margin:10px 0;">
+      <input id="materialTitle" placeholder="Material title (e.g. Lecture 3 - Thevenin's Theorem)" />
+      <textarea id="materialContent" rows="3" placeholder="Paste lecture note / handout text here (or upload a PDF/JPG/PNG below instead)..."></textarea>
+      <div class="row">
+        <input id="materialFileInput" type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" style="flex:1;" />
+      </div>
+      <p id="materialFileName" class="footnote"></p>
+      <button type="submit">+ Add Material</button>
+    </form>
+    <ul id="materialList"></ul>
+    <p class="footnote">Materials are saved server-side in the project database, shared across all devices. Accepts pasted text, PDF (text extracted automatically), or JPG/PNG/WEBP images (shown directly to the AI).</p>
+
+    <div style="border-top:1px solid #262626; margin-top:16px; padding-top:12px;">
+      <strong style="font-size:13px;">📢 Announcements</strong>
+      <p class="footnote">Posted announcements are shown to every student using the app.</p>
+      <form id="addAnnouncementForm" style="display:flex; flex-direction:column; gap:8px; margin:10px 0;">
+        <textarea id="announcementText" rows="2" placeholder="e.g. EEEN304 test moved to Friday..."></textarea>
+        <button type="submit">+ Post Announcement</button>
+      </form>
+      <ul id="announcementAdminList"></ul>
+    </div>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="attachmentPreview" class="hidden">
+    <span id="attachmentPreviewText"></span>
+    <button id="removeAttachmentBtn" type="button">✕</button>
+  </div>
+
+  <div id="inputBar">
+    <input id="fileInput" type="file" accept="image/*,.pdf,.txt" class="hidden" />
+    <button id="attachBtn" type="button" title="Attach an image or file">+</button>
+    <input id="chatInput" placeholder="Ask me anything about EEE..." />
+    <button id="sendBtn">➤</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div id="adminGateModal">
+  <div class="box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:14px;">Admin Login</strong>
+      <button id="closeAdminGate" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <form id="adminGateForm" style="display:flex; flex-direction:column; gap:8px;">
+      <input id="adminPasscode" type="password" placeholder="Admin passcode" />
+      <button type="submit">Log in</button>
+    </form>
+    <p class="footnote">Works out of the box with a built-in default passcode. Set your own ADMIN_PASSCODE in Netlify for stronger security.</p>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profileModal">
+  <div class="box profile-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:14px;">👤 My Profile</strong>
+      <button id="closeProfileModal" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <img id="profileAvatar" class="profile-avatar" src="/assets/profile.jpg" alt="Profile" />
+    <div class="profile-field"><span>Name</span><strong id="profileName">-</strong></div>
+    <div class="profile-field" id="profileRegRow"><span>Reg. Number</span><strong id="profileReg">-</strong></div>
+    <div class="profile-field"><span>Level</span><strong id="profileLevel">-</strong></div>
+    <div class="profile-field"><span>Semester</span><strong id="profileSemester">-</strong></div>
+    <p class="footnote" style="margin-top:10px;">Registered courses:</p>
+    <ul id="profileCourses" class="profile-course-list"></ul>
+  </div>
+</div>
+
+<!-- GPA CALCULATOR MODAL -->
+<div id="gpaModal">
+  <div class="box gpa-box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:14px;">📊 GPA / CGPA Calculator</strong>
+      <button id="closeGpaModal" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <p class="footnote">Nigerian 5-point scale: A=5, B=4, C=3, D=2, E=1, F=0</p>
+    <div id="gpaRows"></div>
+    <button type="button" id="addGpaRowBtn" class="secondary" style="margin-top:8px;">+ Add Course</button>
+    <div class="gpa-result">
+      <span>Total Units: <strong id="gpaUnits">0</strong></span>
+      <span>GPA: <strong id="gpaResult">0.00</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE TUTOR MODAL -->
+<div id="voiceModal">
+  <div class="box voice-box">
+    <div id="voiceOrb" class="voice-orb">🎙️</div>
+    <p id="voiceStatusText">Tap Start to talk</p>
+    <p id="voiceHintText">Tap Start, ask your question, then wait for the reply.</p>
+    <button id="voiceStartBtn">Start Talking</button>
+    <button id="voiceEndBtn" class="hidden">End Call</button>
+    <button id="voiceCloseBtn" type="button">Close</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden">
+  <span id="toastText"></span>
+  <button id="toastClose">✕</button>
+</div>
+
+<script src="/js/voice.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "ee-scholer-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EE Scholer AI - an AI tutor chatbot for Electrical Engineering students at ABU Zaria.",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev --port 8889",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "@netlify/database": "^1.1.0",
+    "adm-zip": "^0.6.0",
+    "drizzle-orm": "^1.0.0-beta.22",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^5.3.0",
+    "drizzle-kit": "^1.0.0-beta.22",
+    "netlify-cli": "^26.2.0",
+    "typescript": "^5.7.3"
+  }
+}

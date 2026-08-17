@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.env
+
+# Local build and Netlify caches
+.netlify/
+dist/
+
+# Seeding progress & logs
+scripts/*.log
+scripts/*.txt
+scripts/.seed-progress*.json
+
+# OS files
+.DS_Store
+Thumbs.db
