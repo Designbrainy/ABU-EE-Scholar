@@ -1,6 +1,6 @@
-# EE Scholer AI
+# EE Scholar AI
 
-EE Scholer AI is a Netlify-hosted AI tutor for Electrical Engineering students at Ahmadu Bello University, Zaria. It includes guest and account chat, course-specific study materials, file attachments, and a Nigerian 5-point GPA/CGPA calculator.
+EE Scholar AI is a Netlify-hosted AI tutor for Electrical Engineering students at Ahmadu Bello University, Zaria. It includes guest and account chat, course-specific study materials, file attachments, and a Nigerian 5-point GPA/CGPA calculator.
 
 ## Stack
 
