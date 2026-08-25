@@ -31,21 +31,39 @@ Billing happens directly on your Google Cloud project (pay-as-you-go for Gemini 
 
 ## Deployment
 
-Deploy the repository to Netlify. No frontend build command is required. Netlify automatically bundles the functions and applies migrations from `netlify/database/migrations/`.
+### 1. Deploying to Vercel
 
-The live site includes a **Download Web App** link that serves `downloads/ee-scholer-ai-web-app.zip`.
+EE Scholar AI natively supports Vercel Serverless Functions and Vercel Postgres / Neon.
+
+1. **Push or Import Repository**: Import the repository on [Vercel](https://vercel.com).
+2. **Framework Preset**: Choose **Other** (Root directory: `./`).
+3. **Environment Variables**:
+   - `GEMINI_API_KEY`: Your Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) *(Required)*.
+   - `POSTGRES_URL` or `DATABASE_URL`: PostgreSQL connection string from Neon / Supabase / Vercel Postgres *(Required for persistent accounts & materials)*.
+   - `RESEND_API_KEY`: API key from [Resend](https://resend.com) for password reset emails *(Optional)*.
+   - `ADMIN_PASSCODE`: Passcode for admin materials upload & user resets *(Optional, default: `eescholarai-admin-2026`)*.
+4. **Deploy CLI**:
+   ```bash
+   npx vercel --prod
+   ```
+
+### 2. Deploying to Netlify
+
+1. Deploy the repository to Netlify (or run `npx netlify deploy --prod`).
+2. Add `GEMINI_API_KEY` (and optionally `RESEND_API_KEY`) in Netlify Site Configuration → Environment Variables.
 
 ## Project structure
 
 ```text
-index.html                         app entry page
-css/style.css                      interface styling
-js/app.js                          frontend behavior
-assets/profile.jpg                 app image
+index.html                         App entry page
+css/style.css                      Interface styling
+js/app.js                          Frontend behavior
+assets/                            Static assets & icons
 db/schema.ts                       Drizzle database schema
-db/index.ts                        Netlify Database client
-netlify/functions/*.mts            API functions
-netlify/database/migrations/       deploy-time database migrations
-downloads/                         downloadable web app archive
-netlify.toml                       Netlify site configuration
+db/index.ts                        Universal Database client (Neon / Postgres / Netlify DB)
+api/*.ts                           Vercel serverless API routes
+netlify/functions/*.mts            Netlify serverless functions
+netlify/database/migrations/       Deploy-time database migrations
+vercel.json                        Vercel platform routing & security headers
+netlify.toml                       Netlify platform configuration
 ```
