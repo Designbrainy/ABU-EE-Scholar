@@ -17,14 +17,20 @@ export async function ensureTables(db: any) {
       );
       CREATE TABLE IF NOT EXISTS "users" (
         "id" serial PRIMARY KEY,
+        "email" text,
         "reg_number" text NOT NULL UNIQUE,
         "name" text NOT NULL,
         "level" text NOT NULL,
         "semester" text NOT NULL,
         "courses" text DEFAULT '[]' NOT NULL,
         "password_hash" text NOT NULL,
+        "reset_token_hash" text,
+        "reset_token_expires_at" timestamp with time zone,
         "created_at" timestamp with time zone DEFAULT now() NOT NULL
       );
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email" text;
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_hash" text;
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_expires_at" timestamp with time zone;
       CREATE TABLE IF NOT EXISTS "announcements" (
         "id" serial PRIMARY KEY,
         "message" text NOT NULL,

@@ -36,6 +36,27 @@ Announcements (`announcements.mts` + the `announcements` table) let the admin br
 to every user — shown in a banner at the top of the chat screen for guests and logged-in students alike.
 Posting/removing announcements is admin-only; reading them is public.
 
+## Authentication & Password Reset
+
+- **Sign Up**: Students create an account using their Full Name, ABU Registration Number (e.g. `u22ee1234`), Email address, Level, Semester, offered courses, and Password.
+- **Login**: Students log in using their Email address (or Reg Number) and Password.
+- **Password Reset Flow**:
+  1. Student requests a reset link via "Forgot password?" using their registered email.
+  2. The server (`/api/auth`) generates a 32-byte cryptographically secure random token, stores its SHA-256 hash in the database with a 1-hour expiration, and dispatches a branded HTML email via `netlify/functions/lib/email.mts`.
+  3. Student opens the reset link (`/?reset_token=<token>`). The app detects the token, displays the "Set New Password" modal, and submits `{ action: "reset-password", token, newPassword }` to `/api/auth`.
+  4. The server validates the token hash and expiration, updates `password_hash`, clears the reset token, and allows immediate login.
+- **In-App Password Change**: Logged-in students can update their password securely from the Profile modal by verifying their current password.
+- **Email Service Configuration (Netlify Environment Variables)**:
+  - `RESEND_API_KEY`: API key from [Resend](https://resend.com) (recommended).
+  - `SENDGRID_API_KEY`: API key from SendGrid (alternative).
+  - `BREVO_API_KEY`: API key from Brevo / Sendinblue (alternative).
+  - `POSTMARK_SERVER_TOKEN`: Server API token from Postmark (alternative).
+  - `EMAIL_FROM`: Custom sender email (e.g. `EE Scholar AI <noreply@yourdomain.com>`).
+  - In local development or if no email provider key is configured, the server safely logs the complete reset link to the console.
+- **Admin Database Reset / User Cleanup**:
+  - `POST /api/auth` or `DELETE /api/auth` with `{ action: "clear-all-users" }` and `x-admin-passcode` (or `node scripts/clear-users.mjs`) clears all user accounts and saved passwords from the database, requiring all students to register fresh accounts.
+  - Deploy-time migration `netlify/database/migrations/20260823000000_user_email_and_password_reset/migration.sql` also wipes the `users` table automatically on deployment.
+
 ## Conventions
 
 - Use modern `.mts` Netlify Functions with standard `Request` and `Response` objects.

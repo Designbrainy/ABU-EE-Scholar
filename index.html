@@ -52,14 +52,18 @@
   </div>
 
   <form id="loginForm">
-    <input id="loginReg" placeholder="Registration number (e.g. u22ee1234)" autocomplete="username" />
-    <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+    <input id="loginEmail" type="email" placeholder="Email address (e.g. student@gmail.com)" autocomplete="email" required />
+    <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" required />
+    <div style="display:flex; justify-content:flex-end; margin-top:-2px; margin-bottom:4px;">
+      <button type="button" id="forgotPasswordBtn" class="link-btn">Forgot password?</button>
+    </div>
     <button type="submit" id="loginSubmit">Log In</button>
   </form>
 
   <form id="signupForm" class="hidden">
-    <input id="suName" placeholder="Full name" autocomplete="name" />
-    <input id="suReg" placeholder="Registration number (e.g. u22ee1234)" autocomplete="off" />
+    <input id="suName" placeholder="Full name (e.g. Fatima Adamu)" autocomplete="name" required />
+    <input id="suReg" placeholder="Registration number (e.g. u22ee1234)" autocomplete="off" required />
+    <input id="suEmail" type="email" placeholder="Email address (e.g. fatima@gmail.com)" autocomplete="email" required />
     <div class="row">
       <select id="suLevel">
         <option value="100">100 Level</option>
@@ -81,12 +85,49 @@
       <button type="button" id="addCustomCourseBtn" class="secondary" style="flex:0 0 auto;">Add</button>
     </div>
     <div id="customAddedList" class="footnote"></div>
-    <input id="suPassword" type="password" placeholder="Create a password" autocomplete="new-password" />
-    <input id="suConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+    <input id="suPassword" type="password" placeholder="Create a password (min. 4 characters)" autocomplete="new-password" required />
+    <input id="suConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" required />
     <button type="submit" id="signupSubmit">Create Account</button>
   </form>
 
   <p class="footnote">Your account is saved permanently on the server — no signup limit, no message limit.</p>
+</div>
+
+<!-- FORGOT PASSWORD MODAL -->
+<div id="forgotPasswordModal">
+  <div class="box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:14px;">🔑 Reset Password</strong>
+      <button id="closeForgotModal" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <p class="footnote" style="margin-top:0; margin-bottom:12px;">
+      Enter your registered email address. We'll send you a link to reset your password.
+    </p>
+    <form id="forgotForm" style="display:flex; flex-direction:column; gap:10px;">
+      <input id="forgotEmail" type="email" placeholder="Your registered email address" autocomplete="email" required />
+      <button type="submit" id="forgotSubmitBtn">Send Reset Link</button>
+      <button type="button" id="cancelForgotBtn" class="secondary">Back to Login</button>
+    </form>
+    <div id="forgotFeedback" class="footnote hidden" style="margin-top:10px; padding:10px; background:#142d17; border:1px solid #166534; border-radius:8px; color:#86efac; line-height:1.4;"></div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL (FROM EMAIL LINK) -->
+<div id="resetPasswordModal">
+  <div class="box">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="font-size:14px;">🔒 Set New Password</strong>
+      <button id="closeResetModal" class="secondary" style="padding:4px 8px;">✕</button>
+    </div>
+    <p id="resetModalSubtitle" class="footnote" style="margin-top:0; margin-bottom:12px;">
+      Create a new password for your account.
+    </p>
+    <form id="resetPasswordForm" style="display:flex; flex-direction:column; gap:10px;">
+      <input id="newPasswordInput" type="password" placeholder="New password (min. 4 characters)" autocomplete="new-password" required />
+      <input id="newPasswordConfirmInput" type="password" placeholder="Confirm new password" autocomplete="new-password" required />
+      <button type="submit" id="resetPasswordSubmitBtn">Save New Password</button>
+    </form>
+  </div>
 </div>
 
 <!-- APP SCREEN -->
@@ -182,11 +223,26 @@
     </div>
     <img id="profileAvatar" class="profile-avatar" src="/assets/profile.jpg" alt="Profile" />
     <div class="profile-field"><span>Name</span><strong id="profileName">-</strong></div>
+    <div class="profile-field" id="profileEmailRow"><span>Email</span><strong id="profileEmail">-</strong></div>
     <div class="profile-field" id="profileRegRow"><span>Reg. Number</span><strong id="profileReg">-</strong></div>
     <div class="profile-field"><span>Level</span><strong id="profileLevel">-</strong></div>
     <div class="profile-field"><span>Semester</span><strong id="profileSemester">-</strong></div>
     <p class="footnote" style="margin-top:10px;">Registered courses:</p>
     <ul id="profileCourses" class="profile-course-list"></ul>
+
+    <!-- In-App Change Password (for logged-in student) -->
+    <div id="profileSecuritySection" style="border-top:1px solid #262626; margin-top:16px; padding-top:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong style="font-size:13px;">Security</strong>
+        <button type="button" id="toggleChangePasswordBtn" class="secondary small">🔑 Change Password</button>
+      </div>
+      <form id="changePasswordForm" class="hidden" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+        <input id="cpCurrentPassword" type="password" placeholder="Current password" autocomplete="current-password" required />
+        <input id="cpNewPassword" type="password" placeholder="New password (min. 4 chars)" autocomplete="new-password" required />
+        <input id="cpConfirmPassword" type="password" placeholder="Confirm new password" autocomplete="new-password" required />
+        <button type="submit" id="cpSubmitBtn">Save New Password</button>
+      </form>
+    </div>
   </div>
 </div>
 

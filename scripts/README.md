@@ -45,3 +45,18 @@ node scripts/seed-materials.mjs --dry-run
 - Skipped files (videos, unsupported formats, lock files) will be logged as `[SKIPPED]`.
 - Failed API calls will be logged as `[ERROR]` and can be retried automatically on the next run.
 - Successful uploads are logged as `[SUCCESS]` and marked in `.seed-progress.json`.
+
+---
+
+# Clear Users & Saved Passwords Script
+
+To reset all student user accounts and passwords from the database (forcing all users to create fresh accounts with the new email schema):
+
+```bash
+# Default (local Netlify dev on port 8888 or custom port):
+node scripts/clear-users.mjs --api-url=http://localhost:8888/api/auth
+
+# Against production deployment:
+node scripts/clear-users.mjs --api-url=https://your-site.netlify.app/api/auth --passcode=YOUR_ADMIN_PASSCODE
+```
+

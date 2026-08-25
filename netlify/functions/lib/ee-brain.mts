@@ -158,6 +158,7 @@ export async function askEEScholar(options: {
   if (!history.length) throw new Error("history is required");
 
   let systemPrompt = SYSTEM_PROMPT;
+  const courseMaterial = await getCourseMaterials(courseCode);
 
   if (courseCode) {
     systemPrompt += `\n\nCURRENT SELECTED COURSE CONTEXT: The student is currently asking about and studying course ${courseCode}.`;

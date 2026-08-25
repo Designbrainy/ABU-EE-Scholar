@@ -209,24 +209,37 @@
     $("customAddedList").textContent = custom.length ? "Added: " + custom.join(", ") : "";
   }
 
+  let activeResetToken = null;
+
   async function doSignup(e) {
     e.preventDefault();
     const name = $("suName").value.trim();
     const regNumber = $("suReg").value.trim();
+    const email = $("suEmail").value.trim();
     const level = $("suLevel").value;
     const semester = $("suSemester").value;
     const password = $("suPassword").value;
     const confirm = $("suConfirm").value;
 
-    if (!name || !regNumber || !password) { showToast("Please fill in your name, registration number, and password."); return; }
-    if (password.length < 4) { showToast("Password should be at least 4 characters."); return; }
-    if (password !== confirm) { showToast("Passwords don't match."); return; }
+    if (!name || !regNumber || !email || !password) {
+      showToast("Please fill in your name, registration number, email, and password.");
+      return;
+    }
+    if (password.length < 4) {
+      showToast("Password should be at least 4 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      showToast("Passwords don't match.");
+      return;
+    }
 
     try {
       const { user } = await apiPost("/api/auth", {
         action: "signup",
         name,
         regNumber,
+        email,
         level,
         semester,
         courses: suCourses.slice(),
@@ -241,12 +254,15 @@
 
   async function doLogin(e) {
     e.preventDefault();
-    const regNumber = $("loginReg").value.trim();
+    const email = $("loginEmail").value.trim();
     const password = $("loginPassword").value;
-    if (!regNumber || !password) { showToast("Enter your registration number and password."); return; }
+    if (!email || !password) {
+      showToast("Enter your email address and password.");
+      return;
+    }
 
     try {
-      const { user } = await apiPost("/api/auth", { action: "login", regNumber, password });
+      const { user } = await apiPost("/api/auth", { action: "login", email, password });
       account = user;
       enterApp();
     } catch (err) {
@@ -255,7 +271,7 @@
   }
 
   function enterGuest() {
-    account = { name: "Guest", level: "-", semester: "-", courses: [], guest: true };
+    account = { name: "Guest", email: "", level: "-", semester: "-", courses: [], guest: true };
     enterApp();
   }
 
@@ -289,9 +305,14 @@
     $("profileName").textContent = account.name || "-";
     if (account.guest) {
       $("profileRegRow").classList.add("hidden");
+      $("profileEmailRow").classList.add("hidden");
+      $("profileSecuritySection").classList.add("hidden");
     } else {
       $("profileRegRow").classList.remove("hidden");
+      $("profileEmailRow").classList.remove("hidden");
+      $("profileSecuritySection").classList.remove("hidden");
       $("profileReg").textContent = (account.regNumber || "-").toUpperCase();
+      $("profileEmail").textContent = account.email || "-";
     }
     $("profileLevel").textContent = account.guest ? "-" : `${account.level} Level`;
     $("profileSemester").textContent = account.guest ? "-" : account.semester;
@@ -307,7 +328,144 @@
         list.appendChild(li);
       });
     }
+    $("changePasswordForm").classList.add("hidden");
+    $("cpCurrentPassword").value = "";
+    $("cpNewPassword").value = "";
+    $("cpConfirmPassword").value = "";
     $("profileModal").classList.add("active");
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault();
+    const currentPassword = $("cpCurrentPassword").value;
+    const newPassword = $("cpNewPassword").value;
+    const confirm = $("cpConfirmPassword").value;
+
+    if (!currentPassword || !newPassword) {
+      showToast("Please fill in current and new password.");
+      return;
+    }
+    if (newPassword.length < 4) {
+      showToast("New password should be at least 4 characters.");
+      return;
+    }
+    if (newPassword !== confirm) {
+      showToast("New passwords do not match.");
+      return;
+    }
+
+    try {
+      const res = await apiPost("/api/auth", {
+        action: "change-password",
+        email: account.email,
+        regNumber: account.regNumber,
+        currentPassword,
+        newPassword,
+      });
+      showToast(res.message || "Password updated successfully!");
+      $("changePasswordForm").classList.add("hidden");
+      $("cpCurrentPassword").value = "";
+      $("cpNewPassword").value = "";
+      $("cpConfirmPassword").value = "";
+    } catch (err) {
+      showToast(err.message);
+    }
+  }
+
+  function openForgotModal() {
+    const loginVal = $("loginEmail").value.trim();
+    if (loginVal && loginVal.includes("@")) {
+      $("forgotEmail").value = loginVal;
+    }
+    $("forgotFeedback").classList.add("hidden");
+    $("forgotFeedback").textContent = "";
+    $("forgotPasswordModal").classList.add("active");
+  }
+
+  function closeForgotModal() {
+    $("forgotPasswordModal").classList.remove("active");
+  }
+
+  async function handleForgotSubmit(e) {
+    e.preventDefault();
+    const email = $("forgotEmail").value.trim();
+    if (!email) {
+      showToast("Please enter your email address.");
+      return;
+    }
+
+    const btn = $("forgotSubmitBtn");
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+
+    try {
+      const res = await apiPost("/api/auth", { action: "request-password-reset", email });
+      $("forgotFeedback").textContent = res.message || "A password reset link has been sent to your email address.";
+      $("forgotFeedback").classList.remove("hidden");
+      showToast("Reset link sent! Please check your email inbox.");
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Send Reset Link";
+    }
+  }
+
+  function openResetModal(token) {
+    activeResetToken = token;
+    $("newPasswordInput").value = "";
+    $("newPasswordConfirmInput").value = "";
+    $("resetPasswordModal").classList.add("active");
+  }
+
+  function closeResetModal() {
+    $("resetPasswordModal").classList.remove("active");
+    activeResetToken = null;
+  }
+
+  async function handleResetPasswordSubmit(e) {
+    e.preventDefault();
+    if (!activeResetToken) {
+      showToast("Invalid reset token. Please request a new link.");
+      return;
+    }
+
+    const newPassword = $("newPasswordInput").value;
+    const confirm = $("newPasswordConfirmInput").value;
+
+    if (!newPassword || newPassword.length < 4) {
+      showToast("Password must be at least 4 characters.");
+      return;
+    }
+    if (newPassword !== confirm) {
+      showToast("Passwords don't match.");
+      return;
+    }
+
+    const btn = $("resetPasswordSubmitBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const res = await apiPost("/api/auth", {
+        action: "reset-password",
+        token: activeResetToken,
+        newPassword,
+      });
+      closeResetModal();
+      // Remove reset_token from URL without reload
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      showToast(res.message || "Password reset successful! You can now log in.");
+      // Switch to login tab
+      $("tabLogin").click();
+    } catch (err) {
+      showToast(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save New Password";
+    }
   }
 
   function logout() {
@@ -707,6 +865,28 @@
     $("logoutBtn").addEventListener("click", logout);
     $("userAvatar").addEventListener("click", openProfileModal);
     $("closeProfileModal").addEventListener("click", () => $("profileModal").classList.remove("active"));
+    $("toggleChangePasswordBtn").addEventListener("click", () => {
+      $("changePasswordForm").classList.toggle("hidden");
+    });
+    $("changePasswordForm").addEventListener("submit", handleChangePassword);
+
+    $("forgotPasswordBtn").addEventListener("click", openForgotModal);
+    $("closeForgotModal").addEventListener("click", closeForgotModal);
+    $("cancelForgotBtn").addEventListener("click", closeForgotModal);
+    $("forgotForm").addEventListener("submit", handleForgotSubmit);
+
+    $("closeResetModal").addEventListener("click", closeResetModal);
+    $("resetPasswordForm").addEventListener("submit", handleResetPasswordSubmit);
+
+    // Detect reset_token in URL if user arrived via email reset link
+    const searchParams = new URLSearchParams(window.location.search);
+    const resetTokenParam = searchParams.get("reset_token");
+    const hashTokenMatch = window.location.hash.match(/reset_token=([^&]+)/);
+    const foundResetToken = resetTokenParam || (hashTokenMatch ? hashTokenMatch[1] : null);
+    if (foundResetToken) {
+      openResetModal(foundResetToken);
+    }
+
     $("sendBtn").addEventListener("click", sendMessage);
     $("chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(e); });
     $("attachBtn").addEventListener("click", () => $("fileInput").click());
