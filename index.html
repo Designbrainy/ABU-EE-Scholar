@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>EE Scholar AI</title>
 <link rel="icon" href="/assets/profile.jpg" />
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -135,16 +135,20 @@
 <!-- APP SCREEN -->
 <div id="app">
   <header>
-    <img id="appLogo" class="logo" src="/assets/profile.jpg" alt="EE Scholar AI logo" />
-    <div class="title">
-      <h1>EE SCHOLAR AI</h1>
-      <p id="userLine">AI tutor for ABU Zaria Electrical Engineering</p>
+    <div class="header-brand">
+      <img id="appLogo" class="logo" src="/assets/profile.jpg" alt="EE Scholar AI logo" />
+      <div class="title">
+        <h1>EE SCHOLAR AI</h1>
+        <p id="userLine">AI tutor for ABU Zaria Electrical Engineering</p>
+      </div>
     </div>
-    <img id="userAvatar" class="avatar hidden" src="/assets/profile.jpg" alt="Profile" title="View profile" />
-    <button id="voiceToolBtn" class="secondary" title="Voice Tutor">🎙️</button>
-    <button id="logoutBtn" class="secondary">Log out</button>
-    <button id="gpaToolBtn2" class="secondary">📊 GPA</button>
-    <button id="pwaInstallBtn2" class="secondary hidden">📲 Install</button>
+    <div class="header-actions">
+      <img id="userAvatar" class="avatar hidden" src="/assets/profile.jpg" alt="Profile" title="View profile" />
+      <button id="voiceToolBtn" class="secondary" title="Voice Tutor">🎙️</button>
+      <button id="gpaToolBtn2" class="secondary" title="GPA / CGPA Calculator">📊 GPA</button>
+      <button id="pwaInstallBtn2" class="secondary hidden" title="Install App">📲 Install</button>
+      <button id="logoutBtn" class="secondary" title="Log out">Log out</button>
+    </div>
   </header>
 
   <div id="announcementsBanner" class="hidden"></div>
