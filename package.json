@@ -1,8 +1,8 @@
 {
-  "name": "ee-scholer-ai",
+  "name": "ee-scholar-ai",
   "version": "1.0.0",
   "private": true,
-  "description": "EE Scholer AI - an AI tutor chatbot for Electrical Engineering students at ABU Zaria.",
+  "description": "EE Scholar AI - an AI tutor chatbot for Electrical Engineering students at ABU Zaria.",
   "type": "module",
   "scripts": {
     "dev": "netlify dev --port 8889",

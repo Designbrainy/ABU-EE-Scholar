@@ -2,7 +2,7 @@
 
 ## Architecture
 
-EE Scholer AI is a static HTML, CSS, and JavaScript app deployed on Netlify. Its `/api/auth`, `/api/chat`, and `/api/materials` routes are modern Netlify Functions in `netlify/functions/`.
+EE Scholar AI is a static HTML, CSS, and JavaScript app deployed on Netlify. Its `/api/auth`, `/api/chat`, and `/api/materials` routes are modern Netlify Functions in `netlify/functions/`.
 
 - AI requests use the official Google Gen AI SDK with a Gemini API key set in the `GEMINI_API_KEY`
   environment variable (see readme.md). No browser-side API key is used; billing is directly on the
@@ -10,7 +10,7 @@ EE Scholer AI is a static HTML, CSS, and JavaScript app deployed on Netlify. Its
 - Persistent users and study materials use Netlify Database with Drizzle ORM.
 - The schema source is `db/schema.ts`; deploy-time migrations live in `netlify/database/migrations/`.
 - The frontend has no build step and calls the friendly `/api/*` paths configured in each function.
-- A downloadable source archive is published at `/downloads/ee-scholer-ai-web-app.zip`.
+- A downloadable source archive is published at `/downloads/ee-scholar-ai-web-app.zip`.
 - The shared AI system prompt / curriculum logic lives in `netlify/functions/lib/ee-brain.mts` and is
   used by both `/api/chat` (text) and the Voice Tutor (see below), so there is one source of truth.
 - The 🎙️ Voice Tutor button uses the browser's own built-in speech engine — no third-party voice

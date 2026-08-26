@@ -56,25 +56,173 @@ input, select, textarea {
 }
 
 #gate {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 20px; overflow-y: auto; text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(14px, 3.5vh, 40px) clamp(12px, 3.5vw, 28px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-sizing: border-box;
 }
-#gate img.big-logo { width: 100px; height: 100px; border-radius: 24px; margin-bottom: 10px; object-fit: cover; }
-#gate h1 { margin: 4px 0; font-size: 18px; }
-#gate .tag { color: #999; font-size: 12px; margin-bottom: 18px; }
-#guestBtn { width: 100%; max-width: 340px; padding: 14px; font-size: 14px; margin-bottom: 16px; }
-.divider { color: #666; font-size: 11px; margin-bottom: 14px; }
-.tabs { display: flex; background: #171717; border-radius: 10px; padding: 4px; margin-bottom: 16px; width: 100%; max-width: 340px; }
-.tabs button { flex: 1; background: transparent; color: #999; padding: 8px; }
-.tabs button.active { background: #22c55e; color: #06210a; }
-#authForm, #loginForm, #signupForm { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
-#courseCheckList { background: #171717; border: 1px solid #333; border-radius: 8px; padding: 8px; max-height: 220px; overflow-y: auto; }
-#courseCheckList label { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; padding: 6px 4px; line-height: 1.4; border-radius: 6px; }
-#courseCheckList label:hover { background: #1f1f1f; }
-#courseCheckList label input[type="checkbox"] { flex-shrink: 0; margin-top: 3px; width: 15px; height: 15px; accent-color: #22c55e; }
-.row { display: flex; gap: 8px; }
-.row > * { flex: 1; }
-.footnote { font-size: 11px; color: #666; margin-top: 6px; }
+
+.gate-card {
+  width: 100%;
+  max-width: 440px;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(20px, 4vw, 34px) clamp(16px, 3.5vw, 30px);
+  background: rgba(20, 20, 22, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: clamp(16px, 3vw, 22px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+}
+
+.gate-card img.big-logo {
+  width: clamp(74px, 14vw, 94px);
+  height: clamp(74px, 14vw, 94px);
+  border-radius: clamp(18px, 3vw, 24px);
+  margin-bottom: 12px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gate-card h1 {
+  margin: 4px 0 6px;
+  font-size: clamp(18px, 4vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #f4f4f5;
+}
+
+.gate-card .tag {
+  color: #a1a1aa;
+  font-size: clamp(12px, 2.4vw, 13.5px);
+  line-height: 1.45;
+  margin: 0 0 16px;
+  max-width: 360px;
+}
+
+#guestBtn {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: clamp(13px, 2.5vw, 14px);
+  margin-bottom: 14px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+#guestBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+#guestBtn:active {
+  transform: translateY(0);
+}
+
+.divider {
+  color: #71717a;
+  font-size: 11px;
+  margin: 0 0 14px;
+}
+
+.tabs {
+  display: flex;
+  background: #121214;
+  border: 1px solid #27272a;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 16px;
+  width: 100%;
+  gap: 4px;
+}
+.tabs button {
+  flex: 1;
+  background: transparent;
+  color: #a1a1aa;
+  padding: 9px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.tabs button.active {
+  background: #22c55e;
+  color: #052e16;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.25);
+}
+
+#authForm, #loginForm, #signupForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+#loginSubmit, #signupSubmit {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: clamp(13px, 2.5vw, 14px);
+  border-radius: 9px;
+  margin-top: 4px;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.2);
+}
+
+#courseCheckList {
+  background: #121214;
+  border: 1px solid #27272a;
+  border-radius: 9px;
+  padding: 8px;
+  max-height: clamp(140px, 26vh, 220px);
+  overflow-y: auto;
+}
+#courseCheckList label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  padding: 6px 4px;
+  line-height: 1.4;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#courseCheckList label:hover {
+  background: #1a1a1e;
+}
+#courseCheckList label input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: 15px;
+  height: 15px;
+  accent-color: #22c55e;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.row > * {
+  flex: 1;
+}
+
+.footnote {
+  font-size: 11.5px;
+  color: #71717a;
+  margin-top: 8px;
+  line-height: 1.45;
+}
 
 #toast {
   position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 999;
@@ -121,7 +269,7 @@ input, select, textarea {
 }
 #adminGateModal.active, #forgotPasswordModal.active, #resetPasswordModal.active { display: flex; }
 #adminGateModal .box, #forgotPasswordModal .box, #resetPasswordModal .box {
-  background: #171717; border: 1px solid #333; border-radius: 16px; padding: 20px; width: 100%; max-width: 320px;
+  background: #171717; border: 1px solid #333; border-radius: 16px; padding: 20px; width: 100%; max-width: 340px;
 }
 
 /* PROFILE MODAL */
@@ -136,25 +284,6 @@ input, select, textarea {
 .profile-field span { color: #999; }
 .profile-course-list { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .profile-course-list li { background: #1f1f1f; border: 1px solid #2e2e2e; border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #22c55e; }
-
-/* SPLASH SCREEN */
-#splash {
-  position: fixed; inset: 0; background: #0a0a0a; z-index: 1000;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  animation: fadeOutSplash 0.6s ease 1.8s forwards;
-}
-.splash-logo { width: 90px; height: 90px; border-radius: 22px; object-fit: cover; animation: pulseLogo 1.4s ease-in-out infinite; }
-#splash h2 { margin: 6px 0 2px; font-size: 16px; letter-spacing: 1px; }
-#splash p { margin: 0; font-size: 12px; color: #999; }
-.splash-bar { width: 220px; height: 8px; background: #1a1a1a; border-radius: 6px; overflow: hidden; margin-top: 8px; border: 1px solid #262626; }
-#splashFill { width: 0%; height: 100%; background: linear-gradient(90deg,#16a34a,#22c55e); transition: width 0.2s ease; }
-.splash-status { color: #22c55e !important; font-weight: 600; }
-@keyframes pulseLogo { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-@keyframes fadeOutSplash { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-
-/* QUICK TOOLS */
-.quick-tools { display: flex; gap: 8px; margin-bottom: 12px; }
-button.small, .button-link.small { padding: 6px 12px; font-size: 11px; }
 
 /* GPA MODAL */
 #gpaModal {
@@ -196,4 +325,128 @@ button.small, .button-link.small { padding: 6px 12px; font-size: 11px; }
 #voiceEndBtn { background: #7a2323; color: #fff; width: 100%; }
 #voiceCloseBtn { background: transparent; color: #999; margin-top: 10px; padding: 4px; font-size: 12px; }
 #voiceToolBtn { background: #1d4ed8; color: #fff; }
+
+/* =========================================================
+   RESPONSIVE ADAPTABILITY: MOBILE, TABLET & DESKTOP
+   ========================================================= */
+
+/* Mobile Phones (<= 480px) */
+@media (max-width: 480px) {
+  #gate {
+    padding: 12px 10px;
+  }
+  .gate-card {
+    padding: 20px 14px;
+    border-radius: 16px;
+    background: #0f0f11;
+  }
+  .gate-card img.big-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    margin-bottom: 8px;
+  }
+  .gate-card h1 {
+    font-size: 19px;
+  }
+  .gate-card .tag {
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  input, select, textarea {
+    font-size: 16px; /* Prevents auto-zoom in iOS Safari */
+    padding: 11px 12px;
+  }
+  .quick-tools {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .quick-tools > * {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+  .row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  #courseCheckList {
+    max-height: 170px;
+  }
+}
+
+/* Tablet Screens (481px to 1024px) */
+@media (min-width: 481px) and (max-width: 1024px) {
+  #gate {
+    padding: 24px 20px;
+  }
+  .gate-card {
+    max-width: 450px;
+    padding: 30px 26px;
+    border-radius: 20px;
+  }
+  .quick-tools > * {
+    flex: 1 1 calc(50% - 4px);
+  }
+}
+
+/* Desktop & Large Screens (>= 1025px) */
+@media (min-width: 1025px) {
+  #gate {
+    padding: 36px 24px;
+  }
+  .gate-card {
+    max-width: 460px;
+    padding: 36px 32px;
+    border-radius: 22px;
+    background: rgba(20, 20, 24, 0.9);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* Short height screens (e.g. mobile/tablet in landscape) */
+@media (max-height: 560px) {
+  #gate {
+    padding: 8px 12px;
+  }
+  .gate-card {
+    margin: 8px 0;
+    padding: 14px 18px;
+  }
+  .gate-card img.big-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+  }
+  .gate-card h1 {
+    font-size: 16px;
+    margin: 2px 0;
+  }
+  .gate-card .tag {
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+  .quick-tools {
+    margin-bottom: 8px;
+  }
+  #guestBtn {
+    padding: 9px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .divider {
+    margin-bottom: 8px;
+  }
+  .tabs {
+    margin-bottom: 8px;
+  }
+  #splash {
+    gap: 4px;
+  }
+  .splash-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+  }
+}
 

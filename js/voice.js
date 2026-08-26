@@ -1,4 +1,4 @@
-// EE Scholer AI — Voice Tutor
+// EE Scholar AI — Voice Tutor
 //
 // Uses the browser's own built-in speech engine — no third-party voice
 // service, no API keys, no external account needed. Works the moment the

@@ -1,4 +1,4 @@
-// Shared EE Scholer AI "brain" — system prompt, staff list, and the Gemini call.
+// Shared EE Scholar AI "brain" — system prompt, staff list, and the Gemini call.
 // Both the text chat endpoint (chat.mts) and the voice tutor endpoint (voice-ask.mts)
 // import from here so there is exactly ONE copy of the curriculum/system-prompt logic.
 // Do not duplicate this content anywhere else.
@@ -63,11 +63,15 @@ Administrative Staff:
 - Garba Salisu — Senior Office Assistant I
 `;
 
-export const SYSTEM_PROMPT = `You are EE Scholer AI, an AI tutor built specifically for Electrical Engineering students at Ahmadu Bello University (ABU), Zaria. Created by Engnr. Abdallah M. Abdallah.
+export const SYSTEM_PROMPT = `You are EE Scholar AI, an AI tutor built specifically for Electrical Engineering students at Ahmadu Bello University (ABU), Zaria. Created by Engnr. Abdallah M. Abdallah.
+
+GREETINGS: When a user says only "Hi", "Hello", or "Hey" (or similar short greetings), reply simply: "Hi! 👋 How can I help you today?" Do not dump or mention all available information, features, courses, staff, or links.
 
 MISSION: Be a patient personal tutor. Never rush. Teach until the student actually understands, not just until a question is answered.
 
 TEACHING STYLE: For any topic, cover: definition, theory, formula derivation, real applications, worked examples, practice questions, common mistakes, and exam tips. After teaching, quiz the student, mark their answers, explain mistakes, and revisit weak areas before moving on.
+
+RESPONSE COMPLETION: When chatting, make sure every answer is fully completed. Do not cut off sentences, explanations, lists, or answers halfway. Always finish the response naturally and completely before sending it.
 
 CBT QUIZ MODE: When asked for a quiz, ask one question at a time by default unless the student explicitly asks for a full list at once. Mix multiple-choice and short theory questions. Mark answers and explain the correct reasoning. Never reveal answers before an attempt unless asked.
 
@@ -144,7 +148,7 @@ export async function getCourseMaterials(courseCode?: string): Promise<CourseMat
 }
 
 /**
- * Core EE Scholer brain call, shared by the text chat endpoint and the voice endpoint.
+ * Core EE Scholar brain call, shared by the text chat endpoint and the voice endpoint.
  * `history` is the conversation so far (last message = current turn).
  */
 export async function askEEScholar(options: {
@@ -156,6 +160,16 @@ export async function askEEScholar(options: {
 }): Promise<string> {
   const { history, courseCode, studentCourses, attachment, voiceMode } = options;
   if (!history.length) throw new Error("history is required");
+
+  const lastMessage = history[history.length - 1];
+  if (
+    lastMessage &&
+    lastMessage.role === "user" &&
+    !attachment?.data &&
+    /^(hi|hello|hey)[!.\s👋]*$/i.test(lastMessage.content.trim())
+  ) {
+    return "Hi! 👋 How can I help you today?";
+  }
 
   let systemPrompt = SYSTEM_PROMPT;
   const courseMaterial = await getCourseMaterials(courseCode);
@@ -206,7 +220,7 @@ export async function askEEScholar(options: {
     ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents,
-      config: { systemInstruction: systemPrompt, maxOutputTokens: voiceMode ? 400 : 1000 },
+      config: { systemInstruction: systemPrompt, maxOutputTokens: voiceMode ? 600 : 3500 },
     });
 
   // Transient Gemini API hiccups are common; retry once before giving up.

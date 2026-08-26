@@ -1,4 +1,4 @@
-// Email notification service for EE Scholer AI
+// Email notification service for EE Scholar AI
 // Supports Resend, SendGrid, Brevo (Sendinblue), Postmark, and console fallback in development.
 
 export interface PasswordResetEmailOptions {
@@ -276,7 +276,7 @@ export function generatePasswordResetEmailHtml(options: PasswordResetEmailOption
     <div class="card">
       <div class="header">
         <div class="badge">ABU ZARIA · ELECTRICAL ENGINEERING</div>
-        <h1>EE SCHOLER AI</h1>
+        <h1>EE SCHOLAR AI</h1>
         <p class="sub">Your Personal AI Tutor & Academic Assistant</p>
       </div>
 
@@ -312,7 +312,7 @@ export function generatePasswordResetEmailText(options: PasswordResetEmailOption
   const { name, resetUrl } = options;
   const firstName = name.trim().split(/\s+/)[0] || "Student";
 
-  return `EE SCHOLER AI - Password Reset Request
+  return `EE SCHOLAR AI - Password Reset Request
 
 Hello ${firstName},
 

@@ -294,7 +294,7 @@
 
     messages = [{
       role: "assistant",
-      content: "Welcome to EE Scholer AI. I'm your personal AI tutor for Electrical Engineering at ABU Zaria. Pick a course above if you want, then ask me anything — or say 'quiz me' for a CBT-style test. There's no limit on how much you can chat.",
+      content: "Welcome to EE Scholar AI. I'm your personal AI tutor for Electrical Engineering at ABU Zaria. Pick a course above if you want, then ask me anything — or say 'quiz me' for a CBT-style test. There's no limit on how much you can chat.",
     }];
     renderMessages();
     loadAnnouncementsBanner();

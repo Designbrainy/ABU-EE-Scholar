@@ -1,4 +1,4 @@
-const CACHE_NAME = "ee-scholer-ai-v1";
+const CACHE_NAME = "ee-scholar-ai-v1";
 const APP_SHELL = [
   "/",
   "/index.html",
