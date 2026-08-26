@@ -833,6 +833,35 @@
     // (see admin-auth.mts / lib/admin-auth.mts, which requires
     // ADMIN_PASSCODE set in Netlify's environment variables).
 
+    // PWA Install prompt handling
+    let deferredInstallPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn1 = $("pwaInstallBtn");
+      const btn2 = $("pwaInstallBtn2");
+      if (btn1) btn1.classList.remove("hidden");
+      if (btn2) btn2.classList.remove("hidden");
+    });
+
+    async function promptPwaInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === "accepted") {
+        const btn1 = $("pwaInstallBtn");
+        const btn2 = $("pwaInstallBtn2");
+        if (btn1) btn1.classList.add("hidden");
+        if (btn2) btn2.classList.add("hidden");
+      }
+      deferredInstallPrompt = null;
+    }
+
+    const pwaBtn1 = $("pwaInstallBtn");
+    const pwaBtn2 = $("pwaInstallBtn2");
+    if (pwaBtn1) pwaBtn1.addEventListener("click", promptPwaInstall);
+    if (pwaBtn2) pwaBtn2.addEventListener("click", promptPwaInstall);
+
     $("gpaToolBtn").addEventListener("click", openGpaModal);
     $("gpaToolBtn2").addEventListener("click", openGpaModal);
     $("closeGpaModal").addEventListener("click", () => $("gpaModal").classList.remove("active"));
