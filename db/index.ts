@@ -5,20 +5,33 @@ import { neon } from "@neondatabase/serverless";
 import postgres from "postgres";
 import * as schema from "./schema.js";
 
-const connectionString =
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.SUPABASE_DATABASE_URL ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.NETLIFY_DATABASE_URL;
+let cachedDb: any = null;
 
-function createDbClient() {
+export function getConnectionString(): string | undefined {
+  return (
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL ||
+    process.env.SUPABASE_DATABASE_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.NETLIFY_DATABASE_URL
+  );
+}
+
+export function createDbClient() {
+  const connectionString = getConnectionString();
+
   if (!connectionString) {
+    // If Netlify Database is present or default fallback
     return drizzleNetlify({ schema });
   }
 
-  if (connectionString.includes("neon.tech")) {
+  // Neon or Vercel Postgres (Neon-backed) HTTP driver
+  if (
+    connectionString.includes("neon.tech") ||
+    connectionString.includes("vercel-storage.com") ||
+    connectionString.includes("neondatabase")
+  ) {
     return drizzleNeon({ client: neon(connectionString), schema });
   }
 
@@ -32,4 +45,18 @@ function createDbClient() {
   return drizzlePostgres({ client, schema });
 }
 
-export const db: any = createDbClient();
+export function getDb() {
+  if (!cachedDb) {
+    cachedDb = createDbClient();
+  }
+  return cachedDb;
+}
+
+export const db: any = new Proxy({} as any, {
+  get(_target, prop) {
+    const client = getDb();
+    const val = client[prop];
+    return typeof val === "function" ? val.bind(client) : val;
+  },
+});
+

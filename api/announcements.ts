@@ -1,5 +1,6 @@
-﻿import { desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.js";
+import { ensureTables } from "../db/init.js";
 import { announcements } from "../db/schema.js";
 import { isAdminRequest, adminAuthErrorResponse } from "./lib/admin-auth.js";
 import { createVercelHandler } from "./lib/adapter.js";
@@ -13,6 +14,7 @@ async function handler(req: Request) {
   const url = new URL(req.url);
 
   try {
+    await ensureTables(db);
     if (req.method === "GET") {
       const rows = await db
         .select()

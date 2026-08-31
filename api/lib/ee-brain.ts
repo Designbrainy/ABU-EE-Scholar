@@ -6,6 +6,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { eq } from "drizzle-orm";
 import { db } from "../../db/index.js";
+import { ensureTables } from "../../db/init.js";
 import { materials } from "../../db/schema.js";
 
 const DEPARTMENT_STAFF_LIST = `DEPARTMENT OF ELECTRICAL ENGINEERING STAFF (2026 record). Use this if a student asks who the HOD is, who teaches in the department, or about department staff generally. This list does not specify which staff teach which course, so do not guess course-lecturer assignments beyond what is given here. If asked for something not on this list, say you don't have that detail.
@@ -123,6 +124,7 @@ type CourseMaterialBundle = {
 
 export async function getCourseMaterials(courseCode?: string): Promise<CourseMaterialBundle> {
   if (!courseCode) return { textBlock: null, images: [] };
+  await ensureTables(db);
   const rows = await db
     .select({
       title: materials.title,
