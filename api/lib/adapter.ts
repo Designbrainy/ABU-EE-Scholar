@@ -1,4 +1,4 @@
-﻿// Universal Vercel Serverless Function adapter
+// Universal Vercel Serverless Function adapter
 // Handles both Web Standard (Request -> Response) and Node.js (req, res)
 
 export function createVercelHandler(

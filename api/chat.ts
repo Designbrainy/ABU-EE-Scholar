@@ -1,4 +1,4 @@
-﻿import { askEEScholar, type Attachment, type ChatMessage } from "./lib/ee-brain.js";
+import { askEEScholar, type Attachment, type ChatMessage } from "./lib/ee-brain.js";
 import { createVercelHandler } from "./lib/adapter.js";
 
 export const config = { maxDuration: 60 };

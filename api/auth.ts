@@ -1,4 +1,4 @@
-﻿import { eq, or, and, gt } from "drizzle-orm";
+import { eq, or, and, gt } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { ensureTables } from "../db/init.js";
 import { users } from "../db/schema.js";

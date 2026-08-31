@@ -1,4 +1,4 @@
-﻿import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { ensureTables } from "../db/init.js";
 import { materials } from "../db/schema.js";

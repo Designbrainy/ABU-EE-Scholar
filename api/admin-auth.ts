@@ -1,4 +1,4 @@
-﻿import { getEffectiveAdminPasscode } from "./lib/admin-auth.js";
+import { getEffectiveAdminPasscode } from "./lib/admin-auth.js";
 import { createVercelHandler } from "./lib/adapter.js";
 
 export const config = { maxDuration: 60 };
