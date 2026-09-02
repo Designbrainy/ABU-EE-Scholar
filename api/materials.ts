@@ -61,8 +61,10 @@ async function handler(req: Request) {
         if (imageBase64.length > MAX_IMAGE_BASE64_LENGTH) {
           return Response.json({ error: "Image is too large. Please upload a file under 6MB." }, { status: 413 });
         }
-        const mimeType = typeof imageMimeType === "string" ? imageMimeType.toLowerCase() : "";
-        if (!ALLOWED_IMAGE_MIME_TYPES.includes(mimeType)) {
+        let mimeType = typeof imageMimeType === "string" ? imageMimeType.toLowerCase().trim() : "";
+        if (mimeType === "image/jpg") mimeType = "image/jpeg";
+        if (!mimeType) mimeType = "image/jpeg";
+        if (!ALLOWED_IMAGE_MIME_TYPES.includes(mimeType) && mimeType !== "image/jpeg") {
           return Response.json(
             { error: "Unsupported image type. Please upload a JPG, PNG, or WEBP file." },
             { status: 400 },
@@ -75,7 +77,7 @@ async function handler(req: Request) {
             title: String(title),
             content: imageBase64,
             contentType: "image",
-            mimeType,
+            mimeType: mimeType === "image/jpg" ? "image/jpeg" : mimeType,
           })
           .returning();
         return Response.json({ material }, { status: 201 });

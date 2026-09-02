@@ -13,6 +13,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="EE Scholar AI" />
 <link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -233,8 +236,46 @@
     <div class="profile-field" id="profileRegRow"><span>Reg. Number</span><strong id="profileReg">-</strong></div>
     <div class="profile-field"><span>Level</span><strong id="profileLevel">-</strong></div>
     <div class="profile-field"><span>Semester</span><strong id="profileSemester">-</strong></div>
-    <p class="footnote" style="margin-top:10px;">Registered courses:</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; margin-bottom:4px;">
+      <span class="footnote" style="margin:0; font-weight:600; color:#d4d4d8;">Registered courses:</span>
+      <button type="button" id="toggleEditCoursesBtn" class="secondary small">✏️ Edit Courses</button>
+    </div>
     <ul id="profileCourses" class="profile-course-list"></ul>
+
+    <!-- Edit Courses Form Section -->
+    <div id="profileEditCoursesSection" class="hidden" style="border-top:1px solid #262626; margin-top:14px; padding-top:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong style="font-size:13px; color:#22c55e;">✏️ Edit Registered Courses</strong>
+      </div>
+      <p class="footnote" style="margin-top:0; margin-bottom:8px;">Update your level, semester, or course list:</p>
+      <form id="editCoursesForm" style="display:flex; flex-direction:column; gap:8px;">
+        <div class="row">
+          <select id="editProfileLevel">
+            <option value="100">100 Level</option>
+            <option value="200">200 Level</option>
+            <option value="300">300 Level</option>
+            <option value="400">400 Level</option>
+            <option value="500">500 Level</option>
+          </select>
+          <select id="editProfileSemester">
+            <option>First Semester</option>
+            <option>Second Semester</option>
+          </select>
+        </div>
+        <div id="editCourseCheckList" style="max-height:160px; overflow-y:auto; background:#18181b; border:1px solid #2e2e34; border-radius:8px; padding:6px 8px; display:flex; flex-direction:column; gap:4px;"></div>
+        <p class="footnote" style="margin-top:2px; margin-bottom:2px;">Add custom course code:</p>
+        <div class="row">
+          <input id="editCustomCode" placeholder="e.g. EEEN405" />
+          <button type="button" id="editAddCustomBtn" class="secondary" style="flex:0 0 auto;">Add</button>
+        </div>
+        <p class="footnote" style="margin-top:2px; margin-bottom:2px;">Active Selected Courses (tap ✕ to remove):</p>
+        <div id="editSelectedChips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; margin-bottom:4px;"></div>
+        <div class="row" style="margin-top:6px;">
+          <button type="submit" id="saveCoursesBtn">Save Changes</button>
+          <button type="button" id="cancelEditCoursesBtn" class="secondary">Cancel</button>
+        </div>
+      </form>
+    </div>
 
     <!-- In-App Change Password (for logged-in student) -->
     <div id="profileSecuritySection" style="border-top:1px solid #262626; margin-top:16px; padding-top:12px;">

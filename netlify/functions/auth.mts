@@ -353,7 +353,58 @@ export default async (req: Request) => {
     }
 
     // ──────────────────────────────────────────
-    // 7. ADMIN: CLEAR ALL SAVED USERS & PASSWORDS
+    // 7. UPDATE COURSES & PROFILE (IN-APP)
+    // ──────────────────────────────────────────
+    if (action === "update-courses" || action === "update-profile") {
+      const { regNumber, email, level, semester, courses } = body;
+      const identifier = String(email || regNumber || "").trim();
+      if (!identifier) {
+        return Response.json({ error: "User identity is required." }, { status: 400 });
+      }
+
+      const normalizedId = identifier.toLowerCase().replace(/\s+/g, "");
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(or(eq(users.email, identifier.toLowerCase()), eq(users.regNumber, normalizedId)))
+        .limit(1);
+
+      if (!user) {
+        return Response.json({ error: "User account not found." }, { status: 404 });
+      }
+
+      const validCourses: string[] = Array.isArray(courses)
+        ? Array.from(
+            new Set(
+              courses
+                .filter((c: unknown) => typeof c === "string" && (c as string).trim().length > 0)
+                .map((c: string) => c.trim().toUpperCase()),
+            ),
+          )
+        : [];
+
+      const updatedLevel = typeof level === "string" && level.trim() ? level.trim() : user.level;
+      const updatedSemester = typeof semester === "string" && semester.trim() ? semester.trim() : user.semester;
+
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          level: updatedLevel,
+          semester: updatedSemester,
+          courses: JSON.stringify(validCourses),
+        })
+        .where(eq(users.id, user.id))
+        .returning();
+
+      return Response.json({
+        success: true,
+        message: "Courses updated successfully.",
+        user: publicUser(updatedUser),
+      });
+    }
+
+    // ──────────────────────────────────────────
+    // 8. ADMIN: CLEAR ALL SAVED USERS & PASSWORDS
     // ──────────────────────────────────────────
     if (action === "clear-all-users" || action === "clear-users" || action === "wipe-users" || req.method === "DELETE") {
       const headerPasscode = req.headers.get("x-admin-passcode");

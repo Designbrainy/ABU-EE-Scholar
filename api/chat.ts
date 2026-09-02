@@ -1,4 +1,4 @@
-import { askEEScholar, type Attachment, type ChatMessage } from "./lib/ee-brain.js";
+import { askEEScholar, normalizeMimeType, type Attachment, type ChatMessage } from "./lib/ee-brain.js";
 import { createVercelHandler } from "./lib/adapter.js";
 
 export const config = { maxDuration: 60 };
@@ -20,6 +20,10 @@ async function handler(req: Request) {
 
     if (!messages.length) {
       return Response.json({ error: "messages array is required." }, { status: 400 });
+    }
+
+    if (attachment && attachment.data) {
+      attachment.mimeType = normalizeMimeType(attachment.mimeType, attachment.name);
     }
 
     const maxBase64Length = 4 * 1024 * 1024;

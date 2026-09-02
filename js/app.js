@@ -121,6 +121,220 @@
   function courseLabel(code) { const f = COURSES.find((c) => c.code === code); return f ? f.label : code; }
   function groupByLevel(list) { return list.reduce((a, c) => { (a[c.level] = a[c.level] || []).push(c); return a; }, {}); }
 
+  function normalizeMimeType(mimeType, filename) {
+    let m = (mimeType || "").toLowerCase().trim();
+    if (m === "image/jpg") m = "image/jpeg";
+    if (!m || m === "application/octet-stream") {
+      const ext = (filename || "").split(".").pop()?.toLowerCase();
+      if (ext === "jpg" || ext === "jpeg") m = "image/jpeg";
+      else if (ext === "png") m = "image/png";
+      else if (ext === "webp") m = "image/webp";
+      else if (ext === "gif") m = "image/gif";
+      else if (ext === "pdf") m = "application/pdf";
+      else if (ext === "txt") m = "text/plain";
+    }
+    return m || "application/octet-stream";
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderMath(expr, displayMode) {
+    if (window.katex && typeof window.katex.renderToString === "function") {
+      try {
+        return window.katex.renderToString(expr.trim(), {
+          displayMode: Boolean(displayMode),
+          throwOnError: false,
+        });
+      } catch (err) {
+        console.warn("KaTeX render error:", err);
+      }
+    }
+    const delimiter = displayMode ? "$$" : "$";
+    return `<span class="katex-raw">${delimiter}${escapeHtml(expr)}${delimiter}</span>`;
+  }
+
+  function formatBotResponse(rawText) {
+    if (!rawText) return "";
+
+    const mathTokens = [];
+    const codeTokens = [];
+    const mermaidTokens = [];
+
+    let text = rawText;
+
+    // 1. Extract fenced mermaid blocks
+    text = text.replace(/```mermaid\s*([\s\S]*?)```/gi, (match, code) => {
+      const idx = mermaidTokens.length;
+      mermaidTokens.push(code.trim());
+      return `\n@@MERMAID_${idx}@@\n`;
+    });
+
+    // 2. Extract other fenced code blocks
+    text = text.replace(/```([a-zA-Z0-9_-]*)\s*\n?([\s\S]*?)```/g, (match, lang, code) => {
+      const idx = codeTokens.length;
+      codeTokens.push({ lang: lang || "", code });
+      return `\n@@CODE_${idx}@@\n`;
+    });
+
+    // 3. Extract block math $$...$$ and \[...\]
+    text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, expr) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr, display: true });
+      return `\n@@MATH_${idx}@@\n`;
+    });
+    text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, expr) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr, display: true });
+      return `\n@@MATH_${idx}@@\n`;
+    });
+
+    // 4. Extract inline math $...$ and \(...\)
+    text = text.replace(/(?<!\\)\$((?:\\\$|[^\$\n])+?)\$/g, (match, expr) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr, display: false });
+      return `@@MATH_${idx}@@`;
+    });
+    text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, expr) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr, display: false });
+      return `@@MATH_${idx}@@`;
+    });
+
+    // 5. Escape HTML in remaining text
+    text = escapeHtml(text);
+
+    // 6. Process inline markdown: inline code, bold, italics
+    text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+    text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
+    text = text.replace(/(?<!_)_([^_]+)_(?!_)/g, "<em>$1</em>");
+
+    // 7. Process block markdown: headers, hr, blockquotes, lists
+    const lines = text.split("\n");
+    const output = [];
+    let inList = false;
+    let listType = "ul";
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Horizontal rule
+      if (/^(\s*[-*_]\s*){3,}$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push("<hr>");
+        continue;
+      }
+
+      // Headings
+      if (/^####\s+(.+)$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push(`<h4>${line.replace(/^####\s+/, "")}</h4>`);
+        continue;
+      }
+      if (/^###\s+(.+)$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push(`<h3>${line.replace(/^###\s+/, "")}</h3>`);
+        continue;
+      }
+      if (/^##\s+(.+)$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push(`<h2>${line.replace(/^##\s+/, "")}</h2>`);
+        continue;
+      }
+      if (/^#\s+(.+)$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push(`<h1>${line.replace(/^#\s+/, "")}</h1>`);
+        continue;
+      }
+
+      // Blockquotes
+      if (/^&gt;\s*(.+)$/.test(line) || /^>\s*(.+)$/.test(line)) {
+        if (inList) { output.push(`</${listType}>`); inList = false; }
+        output.push(`<blockquote>${line.replace(/^(?:&gt;|>)\s*/, "")}</blockquote>`);
+        continue;
+      }
+
+      // Unordered list
+      const ulMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
+      if (ulMatch) {
+        if (!inList || listType !== "ul") {
+          if (inList) output.push(`</${listType}>`);
+          output.push("<ul>");
+          inList = true;
+          listType = "ul";
+        }
+        output.push(`<li>${ulMatch[2]}</li>`);
+        continue;
+      }
+
+      // Ordered list
+      const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+      if (olMatch) {
+        if (!inList || listType !== "ol") {
+          if (inList) output.push(`</${listType}>`);
+          output.push("<ol>");
+          inList = true;
+          listType = "ol";
+        }
+        output.push(`<li>${olMatch[2]}</li>`);
+        continue;
+      }
+
+      // Not in a list
+      if (inList) {
+        output.push(`</${listType}>`);
+        inList = false;
+      }
+
+      const trimmed = line.trim();
+      if (trimmed.startsWith("@@MERMAID_") || trimmed.startsWith("@@CODE_") || trimmed.startsWith("@@MATH_")) {
+        output.push(trimmed);
+      } else if (trimmed === "") {
+        output.push("<br>");
+      } else {
+        output.push(`<p>${line}</p>`);
+      }
+    }
+
+    if (inList) {
+      output.push(`</${listType}>`);
+    }
+
+    let html = output.join("\n");
+
+    // 8. Restore Code blocks
+    html = html.replace(/@@CODE_(\d+)@@/g, (match, idx) => {
+      const item = codeTokens[Number(idx)];
+      if (!item) return "";
+      return `<pre><code>${escapeHtml(item.code)}</code></pre>`;
+    });
+
+    // 9. Restore Mermaid blocks
+    html = html.replace(/@@MERMAID_(\d+)@@/g, (match, idx) => {
+      const code = mermaidTokens[Number(idx)];
+      if (!code) return "";
+      return `<div class="mermaid-wrap"><div class="mermaid">${escapeHtml(code)}</div></div>`;
+    });
+
+    // 10. Restore Math blocks
+    html = html.replace(/@@MATH_(\d+)@@/g, (match, idx) => {
+      const item = mathTokens[Number(idx)];
+      if (!item) return "";
+      return renderMath(item.expr, item.display);
+    });
+
+    html = html.replace(/<p>\s*<\/p>/g, "");
+    return html;
+  }
+
   // ---------- server-backed API helpers (replace the artifact's window.storage) ----------
   async function apiPost(path, body) {
     const res = await fetch(path, {
@@ -300,6 +514,159 @@
     loadAnnouncementsBanner();
   }
 
+  let editSelectedCourses = [];
+
+  function renderEditCourseCheckList() {
+    const el = $("editCourseCheckList");
+    if (!el) return;
+    el.innerHTML = "";
+    const level = $("editProfileLevel").value;
+    const list = COURSES.filter((c) => c.level === level).sort((a, b) => a.code.localeCompare(b.code));
+    if (list.length === 0) {
+      el.innerHTML = '<p class="footnote">No listed courses for this level — use the custom code box below to add.</p>';
+      return;
+    }
+    list.forEach((c) => {
+      const row = document.createElement("label");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.gap = "6px";
+      row.style.fontSize = "12px";
+      row.style.color = "#d4d4d8";
+      row.style.cursor = "pointer";
+      row.style.padding = "2px 0";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.style.width = "auto";
+      cb.checked = editSelectedCourses.includes(c.code);
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          if (!editSelectedCourses.includes(c.code)) editSelectedCourses.push(c.code);
+        } else {
+          editSelectedCourses = editSelectedCourses.filter((x) => x !== c.code);
+        }
+        renderEditSelectedChips();
+      });
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(c.label));
+      el.appendChild(row);
+    });
+  }
+
+  function renderEditSelectedChips() {
+    const container = $("editSelectedChips");
+    if (!container) return;
+    container.innerHTML = "";
+    if (!editSelectedCourses.length) {
+      container.innerHTML = '<span class="footnote" style="margin:0; font-style:italic;">No courses selected yet.</span>';
+      return;
+    }
+    const sorted = editSelectedCourses.slice().sort((a, b) => a.localeCompare(b));
+    sorted.forEach((code) => {
+      const chip = document.createElement("div");
+      chip.className = "course-chip";
+      const span = document.createElement("span");
+      span.textContent = code;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "✕";
+      btn.title = `Remove ${code}`;
+      btn.addEventListener("click", () => {
+        editSelectedCourses = editSelectedCourses.filter((x) => x !== code);
+        renderEditCourseCheckList();
+        renderEditSelectedChips();
+      });
+      chip.appendChild(span);
+      chip.appendChild(btn);
+      container.appendChild(chip);
+    });
+  }
+
+  function toggleEditCourses() {
+    if (!account || account.guest) return;
+    const sec = $("profileEditCoursesSection");
+    const isHidden = sec.classList.contains("hidden");
+    if (isHidden) {
+      editSelectedCourses = (account.courses || []).slice();
+      $("editProfileLevel").value = account.level || "100";
+      $("editProfileSemester").value = account.semester || "First Semester";
+      $("editCustomCode").value = "";
+      renderEditCourseCheckList();
+      renderEditSelectedChips();
+      sec.classList.remove("hidden");
+    } else {
+      sec.classList.add("hidden");
+    }
+  }
+
+  async function handleSaveCourses(e) {
+    e.preventDefault();
+    if (!account || account.guest) return;
+
+    const level = $("editProfileLevel").value;
+    const semester = $("editProfileSemester").value;
+    const btn = $("saveCoursesBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const res = await apiPost("/api/auth", {
+        action: "update-courses",
+        email: account.email,
+        regNumber: account.regNumber,
+        level,
+        semester,
+        courses: editSelectedCourses.slice(),
+      });
+
+      account = { ...account, ...res.user };
+      $("userLine").textContent = account.name + (account.guest ? "" : ` · ${account.level}L · ${account.semester}`);
+      $("profileLevel").textContent = `${account.level} Level`;
+      $("profileSemester").textContent = account.semester;
+
+      // Update course dropdown in header
+      const sel = $("courseSelect");
+      const currentSelected = sel.value;
+      sel.innerHTML = "";
+      const general = document.createElement("option");
+      general.value = "";
+      general.textContent = "General / not specified";
+      sel.appendChild(general);
+      (account.courses || []).slice().sort((a, b) => a.localeCompare(b)).forEach((code) => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = courseLabel(code);
+        sel.appendChild(opt);
+      });
+      if ((account.courses || []).includes(currentSelected)) {
+        sel.value = currentSelected;
+      }
+
+      // Update profile courses list
+      const list = $("profileCourses");
+      list.innerHTML = "";
+      const courses = (account.courses || []).slice().sort((a, b) => a.localeCompare(b));
+      if (!courses.length) {
+        list.innerHTML = '<p class="footnote">No courses registered yet.</p>';
+      } else {
+        courses.forEach((code) => {
+          const li = document.createElement("li");
+          li.textContent = code;
+          list.appendChild(li);
+        });
+      }
+
+      $("profileEditCoursesSection").classList.add("hidden");
+      showToast(res.message || "Courses updated successfully!");
+    } catch (err) {
+      showToast(err.message || "Failed to update courses.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save Changes";
+    }
+  }
+
   function openProfileModal() {
     if (!account) return;
     $("profileName").textContent = account.name || "-";
@@ -307,10 +674,12 @@
       $("profileRegRow").classList.add("hidden");
       $("profileEmailRow").classList.add("hidden");
       $("profileSecuritySection").classList.add("hidden");
+      $("toggleEditCoursesBtn").classList.add("hidden");
     } else {
       $("profileRegRow").classList.remove("hidden");
       $("profileEmailRow").classList.remove("hidden");
       $("profileSecuritySection").classList.remove("hidden");
+      $("toggleEditCoursesBtn").classList.remove("hidden");
       $("profileReg").textContent = (account.regNumber || "-").toUpperCase();
       $("profileEmail").textContent = account.email || "-";
     }
@@ -328,6 +697,7 @@
         list.appendChild(li);
       });
     }
+    $("profileEditCoursesSection").classList.add("hidden");
     $("changePasswordForm").classList.add("hidden");
     $("cpCurrentPassword").value = "";
     $("cpNewPassword").value = "";
@@ -482,7 +852,11 @@
     messages.forEach((m) => {
       const div = document.createElement("div");
       div.className = "msg " + (m.role === "user" ? "user" : "bot");
-      div.textContent = m.content;
+      if (m.role === "user") {
+        div.textContent = m.content;
+      } else {
+        div.innerHTML = formatBotResponse(m.content);
+      }
       el.appendChild(div);
     });
     if (loadingText) {
@@ -492,6 +866,20 @@
       el.appendChild(div);
     }
     el.scrollTop = el.scrollHeight;
+
+    // Trigger Mermaid diagram rendering if present
+    if (window.mermaid && typeof window.mermaid.run === "function") {
+      try {
+        const mermaidNodes = el.querySelectorAll(".mermaid");
+        if (mermaidNodes.length > 0) {
+          window.mermaid.run({ nodes: mermaidNodes }).catch((err) => {
+            console.warn("Mermaid diagram rendering error:", err);
+          });
+        }
+      } catch (err) {
+        console.warn("Mermaid error:", err);
+      }
+    }
   }
 
   function clearAttachment() {
@@ -512,7 +900,8 @@
     reader.onload = () => {
       // reader.result looks like "data:<mime>;base64,<data>" — keep only the base64 part.
       const base64 = String(reader.result).split(",")[1] || "";
-      pendingAttachment = { name: file.name, mimeType: file.type || "application/octet-stream", data: base64 };
+      const normalizedMime = normalizeMimeType(file.type, file.name);
+      pendingAttachment = { name: file.name, mimeType: normalizedMime, data: base64 };
       $("attachmentPreviewText").textContent = "📎 " + file.name;
       $("attachmentPreview").classList.remove("hidden");
     };
@@ -634,11 +1023,12 @@
 
     try {
       const payload = { courseCode: adminCourse, title };
-      if (file && file.type === "application/pdf") {
+      const mime = normalizeMimeType(file ? file.type : "", file ? file.name : "");
+      if (file && (mime === "application/pdf" || (file.name && file.name.toLowerCase().endsWith(".pdf")))) {
         payload.pdfBase64 = await readFileAsBase64(file);
-      } else if (file && file.type.startsWith("image/")) {
+      } else if (file && (mime.startsWith("image/") || /\.(jpe?g|png|webp|gif)$/i.test(file.name || ""))) {
         payload.imageBase64 = await readFileAsBase64(file);
-        payload.imageMimeType = file.type;
+        payload.imageMimeType = mime === "image/jpg" ? "image/jpeg" : mime;
       } else if (file) {
         showToast("Unsupported file type. Please choose a PDF, JPG, PNG, or WEBP.");
         return;
@@ -823,6 +1213,28 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    if (window.mermaid && typeof window.mermaid.initialize === "function") {
+      try {
+        window.mermaid.initialize({
+          startOnLoad: false,
+          theme: "dark",
+          securityLevel: "loose",
+          themeVariables: {
+            darkMode: true,
+            background: "#0e0e11",
+            primaryColor: "#22c55e",
+            primaryTextColor: "#ffffff",
+            primaryBorderColor: "#16a34a",
+            lineColor: "#86efac",
+            secondaryColor: "#27272a",
+            tertiaryColor: "#18181b",
+          },
+        });
+      } catch (err) {
+        console.warn("Mermaid init error:", err);
+      }
+    }
+
     renderCourseCheckList();
     renderAdminCourseSelect();
     runSplashAnimation();
@@ -894,6 +1306,32 @@
     $("logoutBtn").addEventListener("click", logout);
     $("userAvatar").addEventListener("click", openProfileModal);
     $("closeProfileModal").addEventListener("click", () => $("profileModal").classList.remove("active"));
+    $("toggleEditCoursesBtn").addEventListener("click", toggleEditCourses);
+    $("cancelEditCoursesBtn").addEventListener("click", () => {
+      $("profileEditCoursesSection").classList.add("hidden");
+    });
+    $("editProfileLevel").addEventListener("change", renderEditCourseCheckList);
+    $("editAddCustomBtn").addEventListener("click", () => {
+      const val = $("editCustomCode").value.trim().toUpperCase();
+      if (val && !editSelectedCourses.includes(val)) {
+        editSelectedCourses.push(val);
+      }
+      $("editCustomCode").value = "";
+      renderEditSelectedChips();
+    });
+    $("editCustomCode").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = $("editCustomCode").value.trim().toUpperCase();
+        if (val && !editSelectedCourses.includes(val)) {
+          editSelectedCourses.push(val);
+        }
+        $("editCustomCode").value = "";
+        renderEditSelectedChips();
+      }
+    });
+    $("editCoursesForm").addEventListener("submit", handleSaveCourses);
+
     $("toggleChangePasswordBtn").addEventListener("click", () => {
       $("changePasswordForm").classList.toggle("hidden");
     });

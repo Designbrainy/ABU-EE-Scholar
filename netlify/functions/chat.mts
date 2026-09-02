@@ -1,5 +1,5 @@
 import type { Config } from "@netlify/functions";
-import { askEEScholar, type Attachment, type ChatMessage } from "./lib/ee-brain.mts";
+import { askEEScholar, normalizeMimeType, type Attachment, type ChatMessage } from "./lib/ee-brain.mts";
 
 export default async (req: Request) => {
   if (req.method !== "POST") {
@@ -18,6 +18,10 @@ export default async (req: Request) => {
 
     if (!messages.length) {
       return Response.json({ error: "messages array is required." }, { status: 400 });
+    }
+
+    if (attachment && attachment.data) {
+      attachment.mimeType = normalizeMimeType(attachment.mimeType, attachment.name);
     }
 
     const maxBase64Length = 4 * 1024 * 1024;

@@ -97,7 +97,11 @@ MATERIALS BOUNDARY: Your default mode is to teach ONLY from the uploaded course 
 
 IF UNSURE: Never invent facts, formulas, or citations. Say you do not have enough reliable information and ask for more detail or uploaded material.
 
-STYLE: Accurate, friendly, professional, and concise by default. Use headings, bullets, numbered steps, and worked formulas when useful.
+MATHEMATICAL FORMULAS: Format all mathematical formulas, equations, derivations, and calculations using standard LaTeX syntax. Use inline math with single dollar signs (e.g. $V = I \cdot R$, $P = \frac{V^2}{R}$, $\omega = 2\pi f$, $e^{j\theta}$) and block equations with double dollar signs (e.g. $$\oint \mathbf{B} \cdot d\mathbf{l} = \mu_0 I_{\text{enc}}$$). Always present equations cleanly with LaTeX so they render as formatted mathematical formulas.
+
+DIAGRAMS & FLOWCHARTS: When explaining circuits, block diagrams, logic flows, architectures, state machines, or step-by-step processes, produce visual diagrams using fenced \`\`\`mermaid code blocks (e.g., flowcharts \`graph TD\` or \`graph LR\`, state diagrams, sequence diagrams, block diagrams). For electrical circuits and electronic systems, represent stages and components as clear block flowcharts (e.g., \`graph LR; AC[AC Supply 230V] --> T[Step-Down Transformer] --> R[Bridge Rectifier] --> F[LC Filter] --> V[Voltage Regulator 7805] --> RL[Load 5V DC];\`). Always ensure Mermaid syntax is valid and self-contained.
+
+STYLE: Accurate, friendly, professional, and concise by default. Use headings, bullets, numbered steps, LaTeX formulas, and Mermaid diagrams when useful.
 
 SAFETY: Never encourage cheating, fabricate references, or mislead. There is no message limit for registered members.
 
@@ -105,10 +109,10 @@ ${DEPARTMENT_STAFF_LIST}`;
 
 // Extra instruction appended only for voice sessions, since spoken answers
 // need different pacing/formatting than chat bubbles. The underlying knowledge above
-// is identical â€” this does NOT duplicate curriculum, it only adjusts delivery style.
+// is identical — this does NOT duplicate curriculum, it only adjusts delivery style.
 export const VOICE_STYLE_ADDENDUM = `
 VOICE MODE: You are being read aloud by a text-to-speech voice, not displayed as text.
-- Do not use markdown, bullet points, numbered lists, or headings â€” speak in plain natural sentences.
+- Do not use markdown, bullet points, numbered lists, or headings — speak in plain natural sentences.
 - Do not write out formulas symbolically (e.g. "V = IR"); say them in words ("voltage equals current times resistance").
 - Keep each turn reasonably short and conversational. After explaining a concept, briefly check whether the student understood before moving on.
 - If the student says "explain again", explain the same concept a different, simpler way.
@@ -116,6 +120,21 @@ VOICE MODE: You are being read aloud by a text-to-speech voice, not displayed as
 
 export type ChatMessage = { role?: string; content?: unknown };
 export type Attachment = { name?: string; mimeType?: string; data?: string };
+
+export function normalizeMimeType(mimeType?: string, fileNameOrFallback?: string): string {
+  let m = (mimeType || "").toLowerCase().trim();
+  if (m === "image/jpg") m = "image/jpeg";
+  if (!m || m === "application/octet-stream") {
+    const ext = (fileNameOrFallback || "").split(".").pop()?.toLowerCase();
+    if (ext === "jpg" || ext === "jpeg") m = "image/jpeg";
+    else if (ext === "png") m = "image/png";
+    else if (ext === "webp") m = "image/webp";
+    else if (ext === "gif") m = "image/gif";
+    else if (ext === "pdf") m = "application/pdf";
+    else if (ext === "txt") m = "text/plain";
+  }
+  return m || "application/octet-stream";
+}
 
 type CourseMaterialBundle = {
   textBlock: string | null;
@@ -143,8 +162,8 @@ export async function getCourseMaterials(courseCode?: string): Promise<CourseMat
     : null;
 
   const images = imageRows
-    .slice(0, 4) // cap attached images per turn â€” keeps request size/cost sane
-    .map((row) => ({ title: row.title, mimeType: row.mimeType as string, data: row.content }));
+    .slice(0, 4) // cap attached images per turn — keeps request size/cost sane
+    .map((row) => ({ title: row.title, mimeType: normalizeMimeType(row.mimeType as string), data: row.content }));
 
   return { textBlock, images };
 }
@@ -186,7 +205,7 @@ export async function askEEScholar(options: {
 
   if (courseMaterial.images.length) {
     const titles = courseMaterial.images.map((img) => img.title).join(", ");
-    systemPrompt += `\n\nIMAGE COURSE MATERIAL ATTACHED: The following uploaded material images for this course are attached to this message and count as uploaded material under the MATERIALS BOUNDARY rule above â€” look at them directly: ${titles}.`;
+    systemPrompt += `\n\nIMAGE COURSE MATERIAL ATTACHED: The following uploaded material images for this course are attached to this message and count as uploaded material under the MATERIALS BOUNDARY rule above — look at them directly: ${titles}.`;
   }
 
   if (studentCourses && studentCourses.length) {
@@ -200,12 +219,13 @@ export async function askEEScholar(options: {
       { text: message.content },
     ];
     const isCurrentUserTurn = index === history.length - 1 && message.role === "user";
-    if (isCurrentUserTurn && attachment?.data && attachment.mimeType) {
-      parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.data } });
+    if (isCurrentUserTurn && attachment?.data) {
+      const normalizedMime = normalizeMimeType(attachment.mimeType, attachment.name);
+      parts.push({ inlineData: { mimeType: normalizedMime, data: attachment.data } });
     }
     if (isCurrentUserTurn) {
       for (const img of courseMaterial.images) {
-        parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+        parts.push({ inlineData: { mimeType: normalizeMimeType(img.mimeType), data: img.data } });
       }
     }
     return { role: message.role, parts };
