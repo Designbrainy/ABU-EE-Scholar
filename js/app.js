@@ -169,42 +169,55 @@
 
     let text = rawText;
 
+    // 0. Normalize line endings and collapse runs of 2+ blank lines into a
+    //    single paragraph break so responses don't render with big vertical gaps.
+    text = text
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n");
+
+    // NOTE: Placeholder tokens must NOT contain characters that the inline
+    // markdown pass (bold/italic) can consume. Underscores are markdown italic
+    // delimiters, so a previous "@@MATH_0@@" style broke whenever two tokens
+    // appeared together (the underscores paired up into an <em>). Tokens now use
+    // only letters + digits: @@MATH0@@, @@CODE0@@, @@MERMAID0@@.
+
     // 1. Extract fenced mermaid blocks
     text = text.replace(/```mermaid\s*([\s\S]*?)```/gi, (match, code) => {
       const idx = mermaidTokens.length;
       mermaidTokens.push(code.trim());
-      return `\n@@MERMAID_${idx}@@\n`;
+      return `\n@@MERMAID${idx}@@\n`;
     });
 
     // 2. Extract other fenced code blocks
     text = text.replace(/```([a-zA-Z0-9_-]*)\s*\n?([\s\S]*?)```/g, (match, lang, code) => {
       const idx = codeTokens.length;
       codeTokens.push({ lang: lang || "", code });
-      return `\n@@CODE_${idx}@@\n`;
+      return `\n@@CODE${idx}@@\n`;
     });
 
     // 3. Extract block math $$...$$ and \[...\]
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
-      return `\n@@MATH_${idx}@@\n`;
+      return `\n@@MATH${idx}@@\n`;
     });
     text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
-      return `\n@@MATH_${idx}@@\n`;
+      return `\n@@MATH${idx}@@\n`;
     });
 
     // 4. Extract inline math $...$ and \(...\)
     text = text.replace(/(?<!\\)\$((?:\\\$|[^\$\n])+?)\$/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: false });
-      return `@@MATH_${idx}@@`;
+      return `@@MATH${idx}@@`;
     });
     text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: false });
-      return `@@MATH_${idx}@@`;
+      return `@@MATH${idx}@@`;
     });
 
     // 5. Escape HTML in remaining text
@@ -295,10 +308,12 @@
       }
 
       const trimmed = line.trim();
-      if (trimmed.startsWith("@@MERMAID_") || trimmed.startsWith("@@CODE_") || trimmed.startsWith("@@MATH_")) {
+      if (trimmed.startsWith("@@MERMAID") || trimmed.startsWith("@@CODE") || trimmed.startsWith("@@MATH")) {
         output.push(trimmed);
       } else if (trimmed === "") {
-        output.push("<br>");
+        // Collapse consecutive blank lines into a single break so responses
+        // don't accumulate large vertical gaps.
+        if (output[output.length - 1] !== "<br>") output.push("<br>");
       } else {
         output.push(`<p>${line}</p>`);
       }
@@ -311,25 +326,43 @@
     let html = output.join("\n");
 
     // 8. Restore Code blocks
-    html = html.replace(/@@CODE_(\d+)@@/g, (match, idx) => {
+    html = html.replace(/@@CODE(\d+)@@/g, (match, idx) => {
       const item = codeTokens[Number(idx)];
-      if (!item) return "";
+      if (!item) {
+        console.warn("[EE Scholar] No code token found for placeholder:", match);
+        return "";
+      }
       return `<pre><code>${escapeHtml(item.code)}</code></pre>`;
     });
 
     // 9. Restore Mermaid blocks
-    html = html.replace(/@@MERMAID_(\d+)@@/g, (match, idx) => {
+    html = html.replace(/@@MERMAID(\d+)@@/g, (match, idx) => {
       const code = mermaidTokens[Number(idx)];
-      if (!code) return "";
+      if (!code) {
+        console.warn("[EE Scholar] No mermaid token found for placeholder:", match);
+        return "";
+      }
       return `<div class="mermaid-wrap"><div class="mermaid">${escapeHtml(code)}</div></div>`;
     });
 
     // 10. Restore Math blocks
-    html = html.replace(/@@MATH_(\d+)@@/g, (match, idx) => {
+    html = html.replace(/@@MATH(\d+)@@/g, (match, idx) => {
       const item = mathTokens[Number(idx)];
-      if (!item) return "";
+      if (!item) {
+        console.warn("[EE Scholar] No math token found for placeholder:", match);
+        return "";
+      }
       return renderMath(item.expr, item.display);
     });
+
+    // Safety net: if any unreplaced placeholder tokens survived (format drift,
+    // markdown corruption, etc.), warn loudly and strip them so users never see
+    // raw "@@MATH0@@"-style text in the chat.
+    const leftover = html.match(/@@(?:MATH|CODE|MERMAID)\d+@@/g);
+    if (leftover) {
+      console.warn("[EE Scholar] Unreplaced placeholder tokens remained:", leftover);
+      html = html.replace(/@@(?:MATH|CODE|MERMAID)\d+@@/g, "");
+    }
 
     html = html.replace(/<p>\s*<\/p>/g, "");
     return html;

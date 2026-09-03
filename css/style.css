@@ -580,15 +580,19 @@ header {
   color: #f4f4f5;
   border-bottom-left-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* Bot content is real block-level HTML joined by newlines. Without this the
+     inherited `white-space: pre-wrap` (from .msg) turns every source newline
+     between elements into visible blank space, causing huge vertical gaps. */
+  white-space: normal;
 }
 
 .msg.bot h1, .msg.bot h2, .msg.bot h3, .msg.bot h4 {
   color: #86efac;
-  margin: 10px 0 4px;
-  line-height: 1.3;
+  margin: 6px 0 2px;
+  line-height: 1.25;
 }
 .msg.bot h1:first-child, .msg.bot h2:first-child, .msg.bot h3:first-child {
-  margin-top: 2px;
+  margin-top: 0;
 }
 .msg.bot h1 { font-size: 1.15em; }
 .msg.bot h2 { font-size: 1.08em; }
@@ -596,7 +600,7 @@ header {
 .msg.bot h4 { font-size: 0.95em; }
 
 .msg.bot p {
-  margin: 4px 0;
+  margin: 2px 0;
 }
 .msg.bot p:first-child {
   margin-top: 0;
@@ -668,8 +672,8 @@ header {
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 6px 0;
-  margin: 6px 0 !important;
+  padding: 2px 0;
+  margin: 3px 0 !important;
   -webkit-overflow-scrolling: touch;
 }
 .katex {
