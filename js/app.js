@@ -156,8 +156,102 @@
         console.warn("KaTeX render error:", err);
       }
     }
+    // KaTeX not loaded yet — return a placeholder that will be re-rendered
     const delimiter = displayMode ? "$$" : "$";
-    return `<span class="katex-raw">${delimiter}${escapeHtml(expr)}${delimiter}</span>`;
+    return `<span class="katex-pending" data-expr="${escapeHtml(expr)}" data-display="${displayMode}">${delimiter}${escapeHtml(expr)}${delimiter}</span>`;
+  }
+
+  /**
+   * After messages are rendered, if KaTeX wasn't loaded in time,
+   * re-render any .katex-pending spans once KaTeX arrives.
+   */
+  let katexReadyCallbackRegistered = false;
+  function ensureKatexReRender() {
+    if (window.katex) return; // already loaded
+    if (katexReadyCallbackRegistered) return;
+    katexReadyCallbackRegistered = true;
+    // katex.min.js has `defer`, so it fires before DOMContentLoaded but after parsing.
+    // In case it hasn't loaded yet (slow network), poll briefly then give up.
+    const check = setInterval(() => {
+      if (window.katex && typeof window.katex.renderToString === "function") {
+        clearInterval(check);
+        document.querySelectorAll(".katex-pending").forEach((el) => {
+          const expr = el.getAttribute("data-expr") || "";
+          const display = el.getAttribute("data-display") === "true";
+          try {
+            el.outerHTML = window.katex.renderToString(expr, {
+              displayMode: display,
+              throwOnError: false,
+            });
+          } catch (err) {
+            console.warn("KaTeX deferred render error:", err);
+          }
+        });
+      }
+    }, 200);
+    // Stop polling after 15 seconds
+    setTimeout(() => clearInterval(check), 15000);
+  }
+
+  /**
+   * Parse markdown table lines into an HTML <table>.
+   * Expects `lines` to be an array of raw lines (already HTML-escaped),
+   * starting at index `startIdx` where a table header row was detected.
+   * Returns { html, endIdx } where endIdx is the last consumed line index.
+   */
+  function parseMarkdownTable(lines, startIdx) {
+    // Header row
+    const headerLine = lines[startIdx].trim().replace(/^\||\|$/g, "");
+    const headers = headerLine.split("|").map((h) => h.trim());
+
+    // Separator row (must follow immediately)
+    if (startIdx + 1 >= lines.length) return null;
+    const sepLine = lines[startIdx + 1].trim();
+    if (!/^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(sepLine)) return null;
+
+    // Parse alignment from separator
+    const sepCells = sepLine.replace(/^\||\|$/g, "").split("|").map((s) => s.trim());
+    const aligns = sepCells.map((s) => {
+      if (s.startsWith(":") && s.endsWith(":")) return "center";
+      if (s.endsWith(":")) return "right";
+      return "left";
+    });
+
+    // Body rows
+    const bodyRows = [];
+    let endIdx = startIdx + 1;
+    for (let j = startIdx + 2; j < lines.length; j++) {
+      const row = lines[j].trim();
+      if (!row.includes("|") || /^(\s*[-*_]\s*){3,}$/.test(row)) break;
+      // Must look like a table row (start or end with | or have internal |)
+      if (!/\|/.test(row)) break;
+      const rowContent = row.replace(/^\||\|$/g, "");
+      bodyRows.push(rowContent.split("|").map((c) => c.trim()));
+      endIdx = j;
+    }
+
+    // Build HTML
+    let html = '<table>';
+    html += '<thead><tr>';
+    headers.forEach((h, i) => {
+      const align = aligns[i] || "left";
+      html += `<th style="text-align:${align}">${h}</th>`;
+    });
+    html += '</tr></thead>';
+    if (bodyRows.length) {
+      html += '<tbody>';
+      bodyRows.forEach((cells) => {
+        html += '<tr>';
+        cells.forEach((c, i) => {
+          const align = aligns[i] || "left";
+          html += `<td style="text-align:${align}">${c}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody>';
+    }
+    html += '</table>';
+    return { html, endIdx };
   }
 
   function formatBotResponse(rawText) {
@@ -169,101 +263,130 @@
 
     let text = rawText;
 
-    // 1. Extract fenced mermaid blocks
+    // ── Step 1: Extract fenced mermaid blocks ──
     text = text.replace(/```mermaid\s*([\s\S]*?)```/gi, (match, code) => {
       const idx = mermaidTokens.length;
       mermaidTokens.push(code.trim());
-      return `\n@@MERMAID_${idx}@@\n`;
+      return `\n@@MERMAID${idx}@@\n`;
     });
 
-    // 2. Extract other fenced code blocks
+    // ── Step 2: Extract other fenced code blocks ──
     text = text.replace(/```([a-zA-Z0-9_-]*)\s*\n?([\s\S]*?)```/g, (match, lang, code) => {
       const idx = codeTokens.length;
       codeTokens.push({ lang: lang || "", code });
-      return `\n@@CODE_${idx}@@\n`;
+      return `\n@@CODE${idx}@@\n`;
     });
 
-    // 3. Extract block math $$...$$ and \[...\]
+    // ── Step 3: Extract block math $$...$$ and \[...\] ──
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
-      return `\n@@MATH_${idx}@@\n`;
+      return `\n@@MATH${idx}@@\n`;
     });
     text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
-      return `\n@@MATH_${idx}@@\n`;
+      return `\n@@MATH${idx}@@\n`;
     });
 
-    // 4. Extract inline math $...$ and \(...\)
+    // ── Step 4: Extract inline math $...$ and \(...\) ──
     text = text.replace(/(?<!\\)\$((?:\\\$|[^\$\n])+?)\$/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: false });
-      return `@@MATH_${idx}@@`;
+      return `@@MATH${idx}@@`;
     });
     text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: false });
-      return `@@MATH_${idx}@@`;
+      return `@@MATH${idx}@@`;
     });
 
-    // 5. Escape HTML in remaining text
+    // ── Step 5: Escape HTML in remaining text ──
     text = escapeHtml(text);
 
-    // 6. Process inline markdown: inline code, bold, italics
+    // ── Step 6: Inline markdown (code, bold, italics) ──
+    // Process inline code first to protect its contents
     text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
     text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     text = text.replace(/__([^_]+)__/g, "<strong>$1</strong>");
     text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-    text = text.replace(/(?<!_)_([^_]+)_(?!_)/g, "<em>$1</em>");
+    // Underscore italic: exclude @@ boundaries so placeholders like @@MATH0@@ are never broken
+    text = text.replace(/(?<![@_])_([^_@]+)_(?![@_])/g, "<em>$1</em>");
 
-    // 7. Process block markdown: headers, hr, blockquotes, lists
+    // ── Step 7: Block markdown — headers, hr, blockquotes, lists, TABLES ──
     const lines = text.split("\n");
     const output = [];
     let inList = false;
     let listType = "ul";
+    let lastWasBlank = false;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      const trimmed = line.trim();
+
+      // ── Collapse consecutive blank lines ──
+      if (trimmed === "") {
+        if (!lastWasBlank) {
+          output.push("<br>");
+          lastWasBlank = true;
+        }
+        continue;
+      }
+      lastWasBlank = false;
 
       // Horizontal rule
-      if (/^(\s*[-*_]\s*){3,}$/.test(line)) {
+      if (/^(\s*[-*_]\s*){3,}$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
         output.push("<hr>");
         continue;
       }
 
+      // ── Markdown table detection ──
+      // A table starts with a pipe-containing line followed by a separator line
+      if (trimmed.includes("|") && i + 1 < lines.length) {
+        const nextTrimmed = lines[i + 1].trim();
+        if (/^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(nextTrimmed)) {
+          if (inList) { output.push(`</${listType}>`); inList = false; }
+          const table = parseMarkdownTable(lines, i);
+          if (table) {
+            output.push(table.html);
+            i = table.endIdx;
+            continue;
+          }
+        }
+      }
+
       // Headings
-      if (/^####\s+(.+)$/.test(line)) {
+      if (/^####\s+(.+)$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h4>${line.replace(/^####\s+/, "")}</h4>`);
+        output.push(`<h4>${trimmed.replace(/^####\s+/, "")}</h4>`);
         continue;
       }
-      if (/^###\s+(.+)$/.test(line)) {
+      if (/^###\s+(.+)$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h3>${line.replace(/^###\s+/, "")}</h3>`);
+        output.push(`<h3>${trimmed.replace(/^###\s+/, "")}</h3>`);
         continue;
       }
-      if (/^##\s+(.+)$/.test(line)) {
+      if (/^##\s+(.+)$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h2>${line.replace(/^##\s+/, "")}</h2>`);
+        output.push(`<h2>${trimmed.replace(/^##\s+/, "")}</h2>`);
         continue;
       }
-      if (/^#\s+(.+)$/.test(line)) {
+      if (/^#\s+(.+)$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h1>${line.replace(/^#\s+/, "")}</h1>`);
+        output.push(`<h1>${trimmed.replace(/^#\s+/, "")}</h1>`);
         continue;
       }
 
       // Blockquotes
-      if (/^&gt;\s*(.+)$/.test(line) || /^>\s*(.+)$/.test(line)) {
+      if (/^&gt;\s*(.+)$/.test(trimmed) || /^>\s*(.+)$/.test(trimmed)) {
         if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<blockquote>${line.replace(/^(?:&gt;|>)\s*/, "")}</blockquote>`);
+        output.push(`<blockquote>${trimmed.replace(/^(?:&gt;|>)\s*/, "")}</blockquote>`);
         continue;
       }
 
       // Unordered list
-      const ulMatch = line.match(/^(\s*)[-*]\s+(.+)$/);
+      const ulMatch = trimmed.match(/^[-*]\s+(.+)$/);
       if (ulMatch) {
         if (!inList || listType !== "ul") {
           if (inList) output.push(`</${listType}>`);
@@ -271,12 +394,12 @@
           inList = true;
           listType = "ul";
         }
-        output.push(`<li>${ulMatch[2]}</li>`);
+        output.push(`<li>${ulMatch[1]}</li>`);
         continue;
       }
 
       // Ordered list
-      const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+      const olMatch = trimmed.match(/^\d+\.\s+(.+)$/);
       if (olMatch) {
         if (!inList || listType !== "ol") {
           if (inList) output.push(`</${listType}>`);
@@ -284,23 +407,21 @@
           inList = true;
           listType = "ol";
         }
-        output.push(`<li>${olMatch[2]}</li>`);
+        output.push(`<li>${olMatch[1]}</li>`);
         continue;
       }
 
-      // Not in a list
+      // Not in a list anymore
       if (inList) {
         output.push(`</${listType}>`);
         inList = false;
       }
 
-      const trimmed = line.trim();
-      if (trimmed.startsWith("@@MERMAID_") || trimmed.startsWith("@@CODE_") || trimmed.startsWith("@@MATH_")) {
+      // Placeholder lines (code/mermaid/math on their own line)
+      if (/^@@(MATH|CODE|MERMAID)\d+@@$/.test(trimmed)) {
         output.push(trimmed);
-      } else if (trimmed === "") {
-        output.push("<br>");
       } else {
-        output.push(`<p>${line}</p>`);
+        output.push(`<p>${trimmed}</p>`);
       }
     }
 
@@ -310,28 +431,38 @@
 
     let html = output.join("\n");
 
-    // 8. Restore Code blocks
-    html = html.replace(/@@CODE_(\d+)@@/g, (match, idx) => {
+    // ── Step 8: Restore Code blocks ──
+    html = html.replace(/@@CODE(\d+)@@/g, (match, idx) => {
       const item = codeTokens[Number(idx)];
       if (!item) return "";
       return `<pre><code>${escapeHtml(item.code)}</code></pre>`;
     });
 
-    // 9. Restore Mermaid blocks
-    html = html.replace(/@@MERMAID_(\d+)@@/g, (match, idx) => {
+    // ── Step 9: Restore Mermaid blocks ──
+    html = html.replace(/@@MERMAID(\d+)@@/g, (match, idx) => {
       const code = mermaidTokens[Number(idx)];
       if (!code) return "";
       return `<div class="mermaid-wrap"><div class="mermaid">${escapeHtml(code)}</div></div>`;
     });
 
-    // 10. Restore Math blocks
-    html = html.replace(/@@MATH_(\d+)@@/g, (match, idx) => {
+    // ── Step 10 (LAST): Restore Math — must be the very last replacement ──
+    html = html.replace(/@@MATH(\d+)@@/g, (match, idx) => {
       const item = mathTokens[Number(idx)];
       if (!item) return "";
       return renderMath(item.expr, item.display);
     });
 
+    // Clean up empty paragraphs
     html = html.replace(/<p>\s*<\/p>/g, "");
+
+    // ── Diagnostic: warn if any placeholders survived ──
+    if (/@@(?:MATH|CODE|MERMAID)\d+@@/.test(html)) {
+      console.warn(
+        "formatBotResponse: unreplaced placeholders remain in rendered HTML!",
+        html.match(/@@(?:MATH|CODE|MERMAID)\d+@@/g)
+      );
+    }
+
     return html;
   }
 
@@ -879,6 +1010,11 @@
       } catch (err) {
         console.warn("Mermaid error:", err);
       }
+    }
+
+    // If KaTeX wasn't loaded when math was rendered, queue a deferred re-render
+    if (el.querySelector(".katex-pending")) {
+      ensureKatexReRender();
     }
   }
 
