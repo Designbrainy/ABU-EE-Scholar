@@ -13,9 +13,9 @@ const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'eescholarai-admin-2026';
 const DELAY_MS = 100;
 
 const SOURCE_DIRS = [
-  'E:\\Materials\\200 L',
-  'E:\\Materials\\300L',
-  'E:\\Materials\\400L Materials'
+  'D:\\Materials\\200 L',
+  'D:\\Materials\\300L',
+  'D:\\Materials\\400L Materials'
 ];
 
 const IGNORE_EXTENSIONS = new Set([

@@ -145,11 +145,30 @@
       .replace(/'/g, "&#39;");
   }
 
-  function renderMath(expr, displayMode) {
+  function cleanLatex(rawExpr) {
+    let expr = String(rawExpr || "").trim();
+    // Strip outer equation/equation* environment
+    expr = expr.replace(/^\\begin\{equation\*?\}([\s\S]*?)\\end\{equation\*?\}$/i, "$1").trim();
+    // Convert align / align* to aligned for universal KaTeX compatibility
+    expr = expr.replace(/\\begin\{align\*?\}/gi, "\\begin{aligned}").replace(/\\end\{align\*?\}/gi, "\\end{aligned}");
+    // Convert gather / gather* to gathered
+    expr = expr.replace(/\\begin\{gather\*?\}/gi, "\\begin{gathered}").replace(/\\end\{gather\*?\}/gi, "\\end{gathered}");
+    // If multiline using \\ but not wrapped in an environment, wrap in aligned
+    if (/\\\\/.test(expr) && !/\\begin\{(aligned|gathered|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|split)\}/i.test(expr)) {
+      expr = `\\begin{aligned}${expr}\\end{aligned}`;
+    }
+    return expr;
+  }
+
+  function renderMath(rawExpr, displayMode) {
+    const expr = cleanLatex(rawExpr);
+    // If expression contains multiline environments or explicit line breaks, displayMode is preferred
+    const isDisplay = Boolean(displayMode) || /\\begin\{(aligned|gathered|matrix|pmatrix|bmatrix|cases)\}/i.test(expr);
+
     if (window.katex && typeof window.katex.renderToString === "function") {
       try {
-        return window.katex.renderToString(expr.trim(), {
-          displayMode: Boolean(displayMode),
+        return window.katex.renderToString(expr, {
+          displayMode: isDisplay,
           throwOnError: false,
         });
       } catch (err) {
@@ -157,40 +176,49 @@
       }
     }
     // KaTeX not loaded yet — return a placeholder that will be re-rendered
-    const delimiter = displayMode ? "$$" : "$";
-    return `<span class="katex-pending" data-expr="${escapeHtml(expr)}" data-display="${displayMode}">${delimiter}${escapeHtml(expr)}${delimiter}</span>`;
+    const delimiter = isDisplay ? "$$" : "$";
+    return `<span class="katex-pending" data-expr="${escapeHtml(expr)}" data-display="${isDisplay}">${delimiter}${escapeHtml(expr)}${delimiter}</span>`;
   }
 
   /**
    * After messages are rendered, if KaTeX wasn't loaded in time,
    * re-render any .katex-pending spans once KaTeX arrives.
    */
-  let katexReadyCallbackRegistered = false;
+  let katexReRenderTimer = null;
   function ensureKatexReRender() {
-    if (window.katex) return; // already loaded
-    if (katexReadyCallbackRegistered) return;
-    katexReadyCallbackRegistered = true;
-    // katex.min.js has `defer`, so it fires before DOMContentLoaded but after parsing.
-    // In case it hasn't loaded yet (slow network), poll briefly then give up.
-    const check = setInterval(() => {
-      if (window.katex && typeof window.katex.renderToString === "function") {
-        clearInterval(check);
-        document.querySelectorAll(".katex-pending").forEach((el) => {
-          const expr = el.getAttribute("data-expr") || "";
-          const display = el.getAttribute("data-display") === "true";
-          try {
-            el.outerHTML = window.katex.renderToString(expr, {
-              displayMode: display,
-              throwOnError: false,
-            });
-          } catch (err) {
-            console.warn("KaTeX deferred render error:", err);
-          }
-        });
+    function reRenderAllPending() {
+      if (!window.katex || typeof window.katex.renderToString !== "function") return false;
+      const pendingElements = document.querySelectorAll(".katex-pending");
+      if (!pendingElements.length) return true;
+      pendingElements.forEach((el) => {
+        const expr = el.getAttribute("data-expr") || "";
+        const display = el.getAttribute("data-display") === "true";
+        try {
+          el.outerHTML = renderMath(expr, display);
+        } catch (err) {
+          console.warn("KaTeX deferred render error:", err);
+        }
+      });
+      return true;
+    }
+
+    // If KaTeX is already loaded, render immediately
+    if (reRenderAllPending()) return;
+
+    if (katexReRenderTimer) return;
+    katexReRenderTimer = setInterval(() => {
+      if (reRenderAllPending()) {
+        clearInterval(katexReRenderTimer);
+        katexReRenderTimer = null;
       }
-    }, 200);
+    }, 150);
     // Stop polling after 15 seconds
-    setTimeout(() => clearInterval(check), 15000);
+    setTimeout(() => {
+      if (katexReRenderTimer) {
+        clearInterval(katexReRenderTimer);
+        katexReRenderTimer = null;
+      }
+    }, 15000);
   }
 
   /**
@@ -231,7 +259,7 @@
     }
 
     // Build HTML
-    let html = '<table>';
+    let html = '<div class="table-wrap"><table>';
     html += '<thead><tr>';
     headers.forEach((h, i) => {
       const align = aligns[i] || "left";
@@ -250,7 +278,7 @@
       });
       html += '</tbody>';
     }
-    html += '</table>';
+    html += '</table></div>';
     return { html, endIdx };
   }
 
@@ -261,7 +289,10 @@
     const codeTokens = [];
     const mermaidTokens = [];
 
-    let text = rawText;
+    let text = String(rawText);
+
+    // Normalize CRLF to LF
+    text = text.replace(/\r\n/g, "\n");
 
     // ── Step 1: Extract fenced mermaid blocks ──
     text = text.replace(/```mermaid\s*([\s\S]*?)```/gi, (match, code) => {
@@ -273,80 +304,137 @@
     // ── Step 2: Extract other fenced code blocks ──
     text = text.replace(/```([a-zA-Z0-9_-]*)\s*\n?([\s\S]*?)```/g, (match, lang, code) => {
       const idx = codeTokens.length;
-      codeTokens.push({ lang: lang || "", code });
+      codeTokens.push({ lang: (lang || "").trim(), code: code.replace(/\n$/, "") });
       return `\n@@CODE${idx}@@\n`;
     });
 
-    // ── Step 3: Extract block math $$...$$ and \[...\] ──
+    // ── Step 3: Extract block math $$...$$, \[...\], \\\[...\\\] ──
     text = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
       return `\n@@MATH${idx}@@\n`;
     });
-    text = text.replace(/\\\[([\s\S]*?)\\\]/g, (match, expr) => {
+    text = text.replace(/(?:\\{1,2}\[)([\s\S]*?)(?:\\{1,2}\])/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: true });
       return `\n@@MATH${idx}@@\n`;
     });
 
-    // ── Step 4: Extract inline math $...$ and \(...\) ──
-    text = text.replace(/(?<!\\)\$((?:\\\$|[^\$\n])+?)\$/g, (match, expr) => {
+    // ── Step 4: Extract standalone LaTeX environments \begin{env}...\end{env} ──
+    text = text.replace(/\\begin\{(equation\*?|align\*?|gather\*?|aligned|gathered|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|cases|split|multline\*?)\}([\s\S]*?)\\end\{\1\}/gi, (match) => {
       const idx = mathTokens.length;
-      mathTokens.push({ expr, display: false });
-      return `@@MATH${idx}@@`;
+      mathTokens.push({ expr: match, display: true });
+      return `\n@@MATH${idx}@@\n`;
     });
-    text = text.replace(/\\\(([\s\S]*?)\\\)/g, (match, expr) => {
+
+    // ── Step 5: Extract inline math \(...\), \\(...\\) and $...$ ──
+    text = text.replace(/(?:\\{1,2}\()([\s\S]*?)(?:\\{1,2}\))/g, (match, expr) => {
       const idx = mathTokens.length;
       mathTokens.push({ expr, display: false });
       return `@@MATH${idx}@@`;
     });
 
-    // ── Step 5: Escape HTML in remaining text ──
+    // Standard inline $...$ matching:
+    // Dollar sign not preceded by backslash, digit, or another dollar sign,
+    // followed by non-space, ending with non-space before closing dollar, not followed by digit or dollar.
+    text = text.replace(/(?<![\\0-9\$])\$(?!\s)((?:\\\$|[^\$\n])+?\S)\$(?![0-9\$])/g, (match, expr) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr, display: false });
+      return `@@MATH${idx}@@`;
+    });
+
+    // Single character variable $x$ or numbers/symbols
+    text = text.replace(/(?<![\\0-9\$])\$\s*([a-zA-Z\d])\s*\$(?![0-9\$])/g, (match, char) => {
+      const idx = mathTokens.length;
+      mathTokens.push({ expr: char, display: false });
+      return `@@MATH${idx}@@`;
+    });
+
+    // ── Step 6: Escape HTML in remaining text ──
     text = escapeHtml(text);
 
-    // ── Step 6: Inline markdown (code, bold, italics) ──
+    // ── Step 7: Inline markdown (links, code, bold, italics, strikethrough) ──
+    // Markdown links: [text](url)
+    text = text.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s\)\"]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+    // Autolink bare URLs (not already inside href="...")
+    text = text.replace(/(?<!href="|">)(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
     // Process inline code first to protect its contents
     text = text.replace(/`([^`\n]+)`/g, "<code>$1</code>");
-    text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    text = text.replace(/__([^_]+)__/g, "<strong>$1</strong>");
-    text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-    // Underscore italic: exclude @@ boundaries so placeholders like @@MATH0@@ are never broken
-    text = text.replace(/(?<![@_])_([^_@]+)_(?![@_])/g, "<em>$1</em>");
 
-    // ── Step 7: Block markdown — headers, hr, blockquotes, lists, TABLES ──
+    // Bold + Italic: ***text*** or ___text___
+    text = text.replace(/\*\*\*([^*\n]+)\*\*\*/g, "<strong><em>$1</em></strong>");
+    text = text.replace(/(?<![\w@])___([^_@\n]+)___(?![\w@])/g, "<strong><em>$1</em></strong>");
+
+    // Bold: **text** or __text__
+    text = text.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/(?<![\w@])__([^_@\n]+)__(?![\w@])/g, "<strong>$1</strong>");
+
+    // Italic: *text* or _text_ (exclude word boundary so V_in / R_th are never broken)
+    text = text.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+    text = text.replace(/(?<![\w@])_([^_@\n]+)_(?![\w@])/g, "<em>$1</em>");
+
+    // Strikethrough: ~~text~~
+    text = text.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
+
+    // ── Step 8: Block markdown — headers, hr, blockquotes, lists, tables ──
     const lines = text.split("\n");
     const output = [];
     let inList = false;
     let listType = "ul";
-    let lastWasBlank = false;
+    let inBlockquote = false;
+    let bqBuffer = [];
+
+    function flushBlockquote() {
+      if (inBlockquote && bqBuffer.length) {
+        output.push(`<blockquote>${bqBuffer.join("<br>")}</blockquote>`);
+        bqBuffer = [];
+        inBlockquote = false;
+      }
+    }
+
+    function flushList() {
+      if (inList) {
+        output.push(`</${listType}>`);
+        inList = false;
+      }
+    }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
 
-      // ── Collapse consecutive blank lines ──
+      // Blockquotes: group consecutive lines
+      if (/^(?:&gt;|>)\s*(.*)$/.test(trimmed)) {
+        flushList();
+        const quoteText = trimmed.replace(/^(?:&gt;|>)\s*/, "");
+        inBlockquote = true;
+        bqBuffer.push(quoteText);
+        continue;
+      } else {
+        flushBlockquote();
+      }
+
+      // Blank line
       if (trimmed === "") {
-        if (!lastWasBlank) {
-          output.push("<br>");
-          lastWasBlank = true;
-        }
+        flushList();
+        output.push("");
         continue;
       }
-      lastWasBlank = false;
 
-      // Horizontal rule
+      // Horizontal rule: ---, ***, ___
       if (/^(\s*[-*_]\s*){3,}$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
+        flushList();
         output.push("<hr>");
         continue;
       }
 
       // ── Markdown table detection ──
-      // A table starts with a pipe-containing line followed by a separator line
       if (trimmed.includes("|") && i + 1 < lines.length) {
         const nextTrimmed = lines[i + 1].trim();
         if (/^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(nextTrimmed)) {
-          if (inList) { output.push(`</${listType}>`); inList = false; }
+          flushList();
           const table = parseMarkdownTable(lines, i);
           if (table) {
             output.push(table.html);
@@ -356,40 +444,20 @@
         }
       }
 
-      // Headings
-      if (/^####\s+(.+)$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h4>${trimmed.replace(/^####\s+/, "")}</h4>`);
-        continue;
-      }
-      if (/^###\s+(.+)$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h3>${trimmed.replace(/^###\s+/, "")}</h3>`);
-        continue;
-      }
-      if (/^##\s+(.+)$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h2>${trimmed.replace(/^##\s+/, "")}</h2>`);
-        continue;
-      }
-      if (/^#\s+(.+)$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<h1>${trimmed.replace(/^#\s+/, "")}</h1>`);
+      // Headings: # through ######
+      const headingMatch = trimmed.match(/^(#{1,6})\s+(.+?)(?:\s+#+)?$/);
+      if (headingMatch) {
+        flushList();
+        const level = headingMatch[1].length;
+        output.push(`<h${level}>${headingMatch[2].trim()}</h${level}>`);
         continue;
       }
 
-      // Blockquotes
-      if (/^&gt;\s*(.+)$/.test(trimmed) || /^>\s*(.+)$/.test(trimmed)) {
-        if (inList) { output.push(`</${listType}>`); inList = false; }
-        output.push(`<blockquote>${trimmed.replace(/^(?:&gt;|>)\s*/, "")}</blockquote>`);
-        continue;
-      }
-
-      // Unordered list
-      const ulMatch = trimmed.match(/^[-*]\s+(.+)$/);
+      // Unordered list: -, *, +
+      const ulMatch = trimmed.match(/^[-*+]\s+(.+)$/);
       if (ulMatch) {
         if (!inList || listType !== "ul") {
-          if (inList) output.push(`</${listType}>`);
+          flushList();
           output.push("<ul>");
           inList = true;
           listType = "ul";
@@ -398,24 +466,23 @@
         continue;
       }
 
-      // Ordered list
-      const olMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+      // Ordered list: 1. or 1)
+      const olMatch = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
       if (olMatch) {
+        const startNum = parseInt(olMatch[1], 10);
         if (!inList || listType !== "ol") {
-          if (inList) output.push(`</${listType}>`);
-          output.push("<ol>");
+          flushList();
+          const startAttr = startNum > 1 ? ` start="${startNum}"` : "";
+          output.push(`<ol${startAttr}>`);
           inList = true;
           listType = "ol";
         }
-        output.push(`<li>${olMatch[1]}</li>`);
+        output.push(`<li>${olMatch[2]}</li>`);
         continue;
       }
 
-      // Not in a list anymore
-      if (inList) {
-        output.push(`</${listType}>`);
-        inList = false;
-      }
+      // Normal line or placeholder line
+      flushList();
 
       // Placeholder lines (code/mermaid/math on their own line)
       if (/^@@(MATH|CODE|MERMAID)\d+@@$/.test(trimmed)) {
@@ -425,27 +492,27 @@
       }
     }
 
-    if (inList) {
-      output.push(`</${listType}>`);
-    }
+    flushBlockquote();
+    flushList();
 
-    let html = output.join("\n");
+    let html = output.filter(Boolean).join("\n");
 
-    // ── Step 8: Restore Code blocks ──
+    // ── Step 9: Restore Code blocks ──
     html = html.replace(/@@CODE(\d+)@@/g, (match, idx) => {
       const item = codeTokens[Number(idx)];
       if (!item) return "";
-      return `<pre><code>${escapeHtml(item.code)}</code></pre>`;
+      const langClass = item.lang ? ` class="language-${escapeHtml(item.lang)}"` : "";
+      return `<pre><code${langClass}>${escapeHtml(item.code)}</code></pre>`;
     });
 
-    // ── Step 9: Restore Mermaid blocks ──
+    // ── Step 10: Restore Mermaid blocks ──
     html = html.replace(/@@MERMAID(\d+)@@/g, (match, idx) => {
       const code = mermaidTokens[Number(idx)];
       if (!code) return "";
       return `<div class="mermaid-wrap"><div class="mermaid">${escapeHtml(code)}</div></div>`;
     });
 
-    // ── Step 10 (LAST): Restore Math — must be the very last replacement ──
+    // ── Step 11 (LAST): Restore Math — must be the very last replacement ──
     html = html.replace(/@@MATH(\d+)@@/g, (match, idx) => {
       const item = mathTokens[Number(idx)];
       if (!item) return "";
@@ -455,7 +522,7 @@
     // Clean up empty paragraphs
     html = html.replace(/<p>\s*<\/p>/g, "");
 
-    // ── Diagnostic: warn if any placeholders survived ──
+    // Diagnostic: warn if any placeholders survived
     if (/@@(?:MATH|CODE|MERMAID)\d+@@/.test(html)) {
       console.warn(
         "formatBotResponse: unreplaced placeholders remain in rendered HTML!",
@@ -983,11 +1050,7 @@
     messages.forEach((m) => {
       const div = document.createElement("div");
       div.className = "msg " + (m.role === "user" ? "user" : "bot");
-      if (m.role === "user") {
-        div.textContent = m.content;
-      } else {
-        div.innerHTML = formatBotResponse(m.content);
-      }
+      div.innerHTML = formatBotResponse(m.content);
       el.appendChild(div);
     });
     if (loadingText) {
