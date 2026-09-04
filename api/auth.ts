@@ -410,12 +410,17 @@ async function handler(req: Request) {
       { error: "Unknown action. Use 'signup', 'login', 'request-password-reset', 'reset-password', 'change-password', or 'clear-all-users'." },
       { status: 400 },
     );
-  } catch (error) {
-    console.error("Auth request failed", error);
-    return Response.json({ error: "Account service is temporarily unavailable. Please try again." }, { status: 500 });
+  } catch (error: any) {
+    console.error("Auth request failed:", error);
+    return Response.json(
+      { error: "Account service is temporarily unavailable. Please try again." },
+      { status: 500 },
+    );
   }
 }
 
-export const POST = handler;
-export const DELETE = handler;
-export default createVercelHandler(handler);
+const vercelHandler = createVercelHandler(handler);
+export const POST = vercelHandler;
+export const DELETE = vercelHandler;
+export default vercelHandler;
+

@@ -390,7 +390,7 @@ export async function askEEScholar(options: {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY is not set. Add it under Site configuration > Environment variables in Netlify, using an API key from Google AI Studio.",
+      "GEMINI_API_KEY is not set. Add it under Site configuration > Environment variables in Netlify or Vercel, using an API key from Google AI Studio.",
     );
   }
   const ai = new GoogleGenAI({ apiKey });

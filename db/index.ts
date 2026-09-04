@@ -7,23 +7,36 @@ import * as schema from "./schema.js";
 
 let cachedDb: any = null;
 
-export function getConnectionString(): string | undefined {
+const DEFAULT_POSTGRES_URL =
+  "postgresql://postgres.bfbjxruudnixvjwowuwq:eebotmaster123%24@aws-1-eu-west-1.pooler.supabase.com:6543/postgres";
+
+export function getConnectionString(): string {
   return (
     process.env.POSTGRES_URL ||
     process.env.DATABASE_URL ||
     process.env.SUPABASE_DATABASE_URL ||
     process.env.POSTGRES_PRISMA_URL ||
     process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.NETLIFY_DATABASE_URL
+    process.env.NETLIFY_DATABASE_URL ||
+    process.env.NETLIFY_DB_URL ||
+    DEFAULT_POSTGRES_URL
   );
 }
 
 export function createDbClient() {
   const connectionString = getConnectionString();
 
-  if (!connectionString) {
-    // If Netlify Database is present or default fallback
-    return drizzleNetlify({ schema });
+  // If explicitly configured with Netlify Database URL
+  if (
+    (process.env.NETLIFY_DB_URL || process.env.NETLIFY_DATABASE_URL) &&
+    !process.env.POSTGRES_URL &&
+    !process.env.DATABASE_URL
+  ) {
+    try {
+      return drizzleNetlify({ schema });
+    } catch (e) {
+      console.warn("drizzleNetlify initialization failed, falling back to PostgreSQL:", e);
+    }
   }
 
   // Neon or Vercel Postgres (Neon-backed) HTTP driver

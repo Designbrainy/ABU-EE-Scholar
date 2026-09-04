@@ -47,5 +47,7 @@ async function handler(req: Request) {
   }
 }
 
-export const POST = handler;
-export default createVercelHandler(handler);
+const vercelHandler = createVercelHandler(handler);
+export const POST = vercelHandler;
+export default vercelHandler;
+

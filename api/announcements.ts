@@ -49,13 +49,15 @@ async function handler(req: Request) {
     }
 
     return Response.json({ error: "Method not allowed" }, { status: 405 });
-  } catch (error) {
-    console.error("Announcements request failed", error);
+  } catch (error: any) {
+    console.error("Announcements request failed:", error);
     return Response.json({ error: "Announcements service is temporarily unavailable." }, { status: 500 });
   }
 }
 
-export const GET = handler;
-export const POST = handler;
-export const DELETE = handler;
-export default createVercelHandler(handler);
+const vercelHandler = createVercelHandler(handler);
+export const GET = vercelHandler;
+export const POST = vercelHandler;
+export const DELETE = vercelHandler;
+export default vercelHandler;
+
