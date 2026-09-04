@@ -63,6 +63,161 @@ Administrative Staff:
 - Garba Salisu — Senior Office Assistant I
 `;
 
+export const OFFICIAL_ABU_CURRICULUM = `OFFICIAL AHMADU BELLO UNIVERSITY (ABU), ZARIA — ELECTRICAL ENGINEERING CURRICULUM (100L – 500L):
+MANDATORY CURRICULUM RULE:
+When a student asks what courses are taken in any level (100L, 200L, 300L, 400L, or 500L) or asks for course codes, titles, credit units, or semester distributions at ABU Zaria:
+- You MUST EXCLUSIVELY provide the exact courses from this official ABU curriculum list below.
+- NEVER guess, hallucinate, or substitute generic Nigerian university course codes (such as "PHY 101", "PHY 102", "PHY 107", "PHY 108", "CHEM 101/102 with wrong titles", or "Elementary Mathematics I / II").
+- In 100L at ABU Zaria, Physics is split into:
+  * First Semester: PHYS111 (Mechanics, 2 CU), PHYS131 (Heat and Properties of Matter, 2 CU), and PHYS161 (Physics Practical I, 1 CU).
+  * Second Semester: PHYS122 (Electricity, Magnetism and Modern Physics, 2 CU), PHYS124 (Geometrical and Wave Optics, 1 CU), and PHYS162 (Physics Practical II, 1 CU).
+- In 100L at ABU Zaria, Chemistry is split into:
+  * First Semester: CHEM101 (Introductory General Chemistry, 2 CU), CHEM121 (Inorganic Chemistry, 2 CU), and CHEM161 (Chemistry Practical I, 1 CU).
+  * Second Semester: CHEM112 (Introductory Physical Chemistry, 2 CU), and CHEM162 (Chemistry Practical II, 1 CU).
+- In 100L at ABU Zaria, Mathematics is split into:
+  * First Semester: MATH101 (Elementary Set Theory, 2 CU), MATH103 (Trigonometry and Co-ordinate Geometry, 2 CU), and MATH105 (Differential and Integral Calculus, 2 CU).
+  * Second Semester: MATH102 (Algebra, 2 CU), MATH104 (Conic Sections and Applications of Calculus, 2 CU), and MATH106 (Vectors, 2 CU).
+- Other 100L courses:
+  * First Semester: GENS101 (Nationalism, 1 CU), GENS103 (English and Communication Skills, 2 CU). Total First Semester = 19 Credit Units.
+  * Second Semester: STAT102 (Introductory Statistics, 2 CU), COSC102 (Programming in Basic, 2 CU), ENGG102 (Introduction to Engineering, 1 CU), GENS104 (History and Philosophy of Science, 1 CU), and GENS102 (Environmental Health, Elective, 1 CU). Total Second Semester = 19 Core CU + 1 Elective CU.
+
+COMPLETE COURSE CATALOG BY LEVEL:
+### 100 LEVEL
+FIRST SEMESTER (19 Credit Units - All Core):
+- CHEM101: Introductory General Chemistry (Core, 2 CU)
+- CHEM121: Inorganic Chemistry (Core, 2 CU)
+- CHEM161: Chemistry Practical I (Core, 1 CU)
+- PHYS111: Mechanics (Core, 2 CU)
+- PHYS131: Heat and Properties of Matter (Core, 2 CU)
+- PHYS161: Physics Practical I (Core, 1 CU)
+- MATH101: Elementary Set Theory (Core, 2 CU)
+- MATH103: Trigonometry and Co-ordinate Geometry (Core, 2 CU)
+- MATH105: Differential and Integral Calculus (Core, 2 CU)
+- GENS101: Nationalism (Core, 1 CU)
+- GENS103: English and Communication Skills (Core, 2 CU)
+
+SECOND SEMESTER (19 Core CU + 1 Elective CU):
+- CHEM112: Introductory Physical Chemistry (Core, 2 CU)
+- CHEM162: Chemistry Practical II (Core, 1 CU)
+- PHYS122: Electricity, Magnetism and Modern Physics (Core, 2 CU)
+- PHYS124: Geometrical and Wave Optics (Core, 1 CU)
+- PHYS162: Physics Practical II (Core, 1 CU)
+- MATH102: Algebra (Core, 2 CU)
+- MATH104: Conic Sections and Applications of Calculus (Core, 2 CU)
+- MATH106: Vectors (Core, 2 CU)
+- STAT102: Introductory Statistics (Core, 2 CU)
+- COSC102: Programming in Basic (Core, 2 CU)
+- ENGG102: Introduction to Engineering (Core, 1 CU)
+- GENS104: History and Philosophy of Science (Core, 1 CU)
+- GENS102: Environmental Health (Elective, 1 CU)
+
+### 200 LEVEL
+FIRST SEMESTER (18 Credit Units):
+- ETEN201: Introduction to Electronic Communications I (Core, 1 CU)
+- EEEN201 / ENGG205: Electric Field and Circuit Theory (Core, 2 CU)
+- EEEN203 / ENGG207: Machines, Power and Installations (Core, 2 CU)
+- CVEN201 / ENGG203: Theory of Structures (Core, 2 CU)
+- MEEN201 / ENGG201: Engineering Graphics (Core, 2 CU)
+- MMEN201 / ENGG209: Material Science (Core, 2 CU)
+- MATH241: Calculus I (Core, 3 CU)
+- MATH243: Algebra I (Core, 2 CU)
+- WREN201 / ENGG211: Fluid Mechanics (Core, 2 CU)
+
+SECOND SEMESTER (20 Credit Units):
+- ETEN202: Introduction to Electronic Communications II (Core, 1 CU)
+- EEEN202 / ENGG212: Electronics, Measurement and Transducers (Core, 2 CU)
+- CHEN202 / ENGG210: Introduction to Management (Core, 1 CU)
+- MEEN202 / ENGG202: Engineering Drawing (Core, 3 CU)
+- MEEN204 / ENGG204: Strength of Materials (Core, 2 CU)
+- MEEN206 / ENGG206: Dynamics of Machines (Core, 2 CU)
+- MEEN208 / ENGG208: Basic Thermodynamics (Core, 2 CU)
+- MATH242: Calculus II (Core, 2 CU)
+- MATH244: Algebra II (Core, 3 CU)
+- GENS202: Entrepreneurship and Innovation (Core, 2 CU)
+
+### 300 LEVEL
+FIRST SEMESTER (21 Credit Units):
+- ETEN301 / EEEN301: Circuit Theory and Systems I (Core, 2 CU)
+- ETEN303 / EEEN342: Telecommunication Principles (Core, 2 CU)
+- ETEN305 / EEEN310: Analogue Electronics (Core, 2 CU)
+- ETEN311 / EEEN311: Laboratory Practical I (Core, 2 CU)
+- COEN333 / COEN303: Control Engineering I (Core, 2 CU)
+- COEN335 / EEEN316: Introduction to Programming (Core, 2 CU)
+- EEEN327: Power Engineering I (Core, 2 CU)
+- MATH341: Differential Equations and Transforms (Cognate, 3 CU)
+- STAT343: Statistics (Cognate, 2 CU)
+- GENS301: Business Creation and Growth (Core, 2 CU)
+
+SECOND SEMESTER (18 Credit Units):
+- ETEN302 / EEEN302: Circuit Theory and Systems II (Core, 2 CU)
+- ETEN304 / EEEN320: EM Fields and Waves (Core, 3 CU)
+- ETEN306 / EEEN306: Fundamentals of Power Electronics (Core, 2 CU)
+- ETEN308 / EEEN308: Measurements and Instrumentation (Core, 2 CU)
+- ETEN310: Electronics Engineering I (Core, 2 CU)
+- ETEN312: Communication Power Systems (Core, 2 CU)
+- ETEN314 / EEEN314: Laboratory Practical II (Core, 2 CU)
+- ETEN316 / EEEN307: Digital Electronics I (Core, 2 CU)
+- ETEN318: Technical Writing and Presentation (Core, 1 CU)
+
+RESTRICTED ELECTIVES (Min 2 Credit Units):
+- COSC344: Programming in Java (Restricted, 3 CU)
+- QTYS309: Development Economics (Restricted, 2 CU)
+- EEEN309: Electrical Machines (Restricted, 2 CU)
+
+### 400 LEVEL
+FIRST SEMESTER (21 Credit Units):
+- ETEN401 / CMEN401: Data Communication (Core, 2 CU)
+- ETEN403 / COEN401: Microcontroller and Embedded System Applications (Core, 2 CU)
+- ETEN405 / EEEN405: Digital Electronics II (Core, 2 CU)
+- ETEN407: Introduction to Semiconductor Microelectronics (Core, 2 CU)
+- ETEN409: CAD for Electronics Design (Core, 2 CU)
+- ETEN411 / EEEN411: Laboratory Practical & Project (Core, 2 CU)
+- COEN463 / COEN407: Control Engineering II (Core, 2 CU)
+- ENGG403 / QTYS421: Law For Engineers (Cognate, 1 CU)
+- MATH441: Complex Analysis (Cognate, 3 CU)
+- MATH443: Numerical Analysis (Cognate, 3 CU)
+- EEEN415: Electric Services Design (Core, 2 CU)
+- EEEN427: Power Engineering II (Core, 2 CU)
+
+SECOND SEMESTER:
+- SIWE498: Students Industrial Work Experience Scheme (SIWES - 22 Weeks) (Core, 6 CU)
+
+### 500 LEVEL
+FIRST SEMESTER (19 Credit Units):
+- ETEN501 / CMEN501: Integrated Circuits and Systems Design (Core, 2 CU)
+- ETEN503 / CMEN503: Telecommunications Networks I (Core, 2 CU)
+- ETEN505: Digital Communications (Core, 2 CU)
+- ETEN507: Electronics Engineering II (Core, 2 CU)
+- ETEN509 / EEEN509: Engineering Management and Decision Making (Core, 2 CU)
+- ETEN511: Laboratory Practical III (Core, 2 CU)
+- ETEN513 / EEEN511: Reliability and Maintainability (Core, 2 CU)
+- ETEN517 / CMEN517: Digital Signal Processing (Core, 2 CU)
+- ETEN597 / EEEN599: Final Year Project I (Core, 3 CU)
+- EEEN513: Advanced Electric Machines (Core, 2 CU)
+- EEEN519: Programmable Systems for EE Applications (Core, 2 CU)
+- EEEN527: Power Engineering III (Core, 2 CU)
+- COEN507: Control Engineering III (Core, 2 CU)
+
+SECOND SEMESTER (16 Credit Units + Electives):
+- ETEN502: Wireless and Mobile Communications (Core, 2 CU)
+- ETEN504 / CMEN504: Telecommunications Networks II (Core, 3 CU)
+- ETEN506: Optical Fibre Communications (Core, 2 CU)
+- ETEN508: Satellite Communications (Core, 2 CU)
+- ETEN510: Telecommunication Systems Policy and Planning (Core, 2 CU)
+- ETEN514: Teletraffic Engineering (Core, 2 CU)
+- ETEN598: Final Year Project II (Core, 3 CU)
+- EEEN522: Introduction to FACT Devices (Core, 2 CU)
+- EEEN524: Electric Drives (Core, 2 CU)
+- EEEN528: Power Electronics II (Core, 2 CU)
+- EEEN530 / EEEN501: Advanced Circuit Theory (Core, 2 CU)
+- EEEN532: Energy System and Management (Core, 2 CU)
+- EEEN550: High Voltage Engineering (Core, 2 CU)
+- ETEN512: Digital Switching Systems (Restricted Elective, 2 CU)
+- COEN504: Web-Based Design and Applications (Restricted Elective, 2 CU)
+- COEN506: Computer System Architecture (Restricted Elective, 2 CU)
+- COEN510: Network Security and Cryptography (Restricted Elective, 2 CU)
+- COEN512: Mechatronics (Restricted Elective, 2 CU)`;
+
 export const SYSTEM_PROMPT = `You are EE Scholar AI, an AI tutor built specifically for Electrical Engineering students at Ahmadu Bello University (ABU), Zaria. Created by Engnr. Abdallah M. Abdallah.
 
 GREETINGS: When a user says only "Hi", "Hello", or "Hey" (or similar short greetings), reply simply: "Hi! 👋 How can I help you today?" Do not dump or mention all available information, features, courses, staff, or links.
@@ -104,7 +259,9 @@ STYLE: Accurate, friendly, professional, and concise by default. Use headings, b
 
 SAFETY: Never encourage cheating, fabricate references, or mislead. There is no message limit for registered members.
 
-${DEPARTMENT_STAFF_LIST}`;
+${DEPARTMENT_STAFF_LIST}
+
+${OFFICIAL_ABU_CURRICULUM}`;
 
 // Extra instruction appended only for voice sessions, since spoken answers
 // need different pacing/formatting than chat bubbles. The underlying knowledge above

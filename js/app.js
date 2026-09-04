@@ -7,10 +7,10 @@
   let adminPasscodeValue = null; // held in memory only for this tab, after a verified login
 
   const COURSES = [
-    // ── 100 Level ──
-    { code: "CHEM111", label: "CHEM111 — Introductory General Chemistry", level: "100" },
+    // ── 100 Level (1st Semester) ──
+    { code: "CHEM101", label: "CHEM101 — Introductory General Chemistry", level: "100" },
     { code: "CHEM121", label: "CHEM121 — Inorganic Chemistry", level: "100" },
-    { code: "CHEM191", label: "CHEM191 — Chemistry Practical I", level: "100" },
+    { code: "CHEM161", label: "CHEM161 — Chemistry Practical I", level: "100" },
     { code: "PHYS111", label: "PHYS111 — Mechanics", level: "100" },
     { code: "PHYS131", label: "PHYS131 — Heat and Properties of Matter", level: "100" },
     { code: "PHYS161", label: "PHYS161 — Physics Practical I", level: "100" },
@@ -19,9 +19,9 @@
     { code: "MATH105", label: "MATH105 — Differential & Integral Calculus", level: "100" },
     { code: "GENS101", label: "GENS101 — Nationalism", level: "100" },
     { code: "GENS103", label: "GENS103 — English & Communication Skills", level: "100" },
+    // ── 100 Level (2nd Semester) ──
     { code: "CHEM112", label: "CHEM112 — Introductory Physical Chemistry", level: "100" },
-    { code: "CHEM132", label: "CHEM132 — Introductory Organic Chemistry", level: "100" },
-    { code: "CHEM192", label: "CHEM192 — Chemistry Practical II", level: "100" },
+    { code: "CHEM162", label: "CHEM162 — Chemistry Practical II", level: "100" },
     { code: "PHYS122", label: "PHYS122 — Electricity, Magnetism & Modern Physics", level: "100" },
     { code: "PHYS124", label: "PHYS124 — Geometrical & Wave Optics", level: "100" },
     { code: "PHYS162", label: "PHYS162 — Physics Practical II", level: "100" },
