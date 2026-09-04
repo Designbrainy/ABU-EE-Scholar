@@ -11,16 +11,20 @@ const DEFAULT_POSTGRES_URL =
   "postgresql://postgres.bfbjxruudnixvjwowuwq:eebotmaster123%24@aws-1-eu-west-1.pooler.supabase.com:6543/postgres";
 
 export function getConnectionString(): string {
-  return (
-    process.env.POSTGRES_URL ||
-    process.env.DATABASE_URL ||
-    process.env.SUPABASE_DATABASE_URL ||
-    process.env.POSTGRES_PRISMA_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.NETLIFY_DATABASE_URL ||
-    process.env.NETLIFY_DB_URL ||
-    DEFAULT_POSTGRES_URL
-  );
+  // If user explicitly configured a Supabase or custom database URL
+  if (process.env.SUPABASE_DATABASE_URL) {
+    return process.env.SUPABASE_DATABASE_URL;
+  }
+  // If running in Netlify with Netlify DB
+  if (process.env.NETLIFY_DATABASE_URL || process.env.NETLIFY_DB_URL) {
+    return process.env.NETLIFY_DATABASE_URL || process.env.NETLIFY_DB_URL!;
+  }
+  // Supabase is the primary database containing all 1,132 course materials and accounts.
+  // If POSTGRES_URL is the auto-injected vercel-storage Neon database, use Supabase instead.
+  if (process.env.POSTGRES_URL && !process.env.POSTGRES_URL.includes("vercel-storage.com")) {
+    return process.env.POSTGRES_URL;
+  }
+  return process.env.DATABASE_URL || DEFAULT_POSTGRES_URL;
 }
 
 export function createDbClient() {

@@ -14,7 +14,10 @@ export async function ensureTables(db: any) {
         "content_type" text NOT NULL DEFAULT 'text',
         "mime_type" text,
         "created_at" timestamp with time zone DEFAULT now() NOT NULL
-      );
+      )
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "users" (
         "id" serial PRIMARY KEY,
         "email" text,
@@ -27,16 +30,29 @@ export async function ensureTables(db: any) {
         "reset_token_hash" text,
         "reset_token_expires_at" timestamp with time zone,
         "created_at" timestamp with time zone DEFAULT now() NOT NULL
-      );
-      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email" text;
-      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_hash" text;
-      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_expires_at" timestamp with time zone;
+      )
+    `);
+
+    try {
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email" text`);
+    } catch {}
+
+    try {
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_hash" text`);
+    } catch {}
+
+    try {
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "reset_token_expires_at" timestamp with time zone`);
+    } catch {}
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "announcements" (
         "id" serial PRIMARY KEY,
         "message" text NOT NULL,
         "created_at" timestamp with time zone DEFAULT now() NOT NULL
-      );
+      )
     `);
+
     initialized = true;
   } catch (err) {
     console.error("Failed to initialize database tables:", err);
