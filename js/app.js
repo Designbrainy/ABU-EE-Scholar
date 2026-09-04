@@ -292,7 +292,11 @@
     let text = String(rawText);
 
     // Normalize CRLF to LF
-    text = text.replace(/\r\n/g, "\n");
+    // ── Normalize line endings and collapse multiple blank lines ──
+    text = text
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n");
 
     // ── Step 1: Extract fenced mermaid blocks ──
     text = text.replace(/```mermaid\s*([\s\S]*?)```/gi, (match, code) => {
@@ -372,7 +376,7 @@
     text = text.replace(/(?<![\w@])__([^_@\n]+)__(?![\w@])/g, "<strong>$1</strong>");
 
     // Italic: *text* or _text_ (exclude word boundary so V_in / R_th are never broken)
-    text = text.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "<em>$1</em>");
+    text = text.replace(/(?<!\*)\*(?!\s)([^*\n]+?\S)\*(?!\*)/g, "<em>$1</em>");
     text = text.replace(/(?<![\w@])_([^_@\n]+)_(?![\w@])/g, "<em>$1</em>");
 
     // Strikethrough: ~~text~~
@@ -416,10 +420,9 @@
         flushBlockquote();
       }
 
-      // Blank line
+      // Blank line: close open list, do not emit empty paragraphs
       if (trimmed === "") {
         flushList();
-        output.push("");
         continue;
       }
 
@@ -453,8 +456,8 @@
         continue;
       }
 
-      // Unordered list: -, *, +
-      const ulMatch = trimmed.match(/^[-*+]\s+(.+)$/);
+      // Unordered list: -, *, +, or Unicode bullet •
+      const ulMatch = trimmed.match(/^[-*+•]\s+(.+)$/);
       if (ulMatch) {
         if (!inList || listType !== "ul") {
           flushList();
@@ -500,7 +503,10 @@
     // ── Step 9: Restore Code blocks ──
     html = html.replace(/@@CODE(\d+)@@/g, (match, idx) => {
       const item = codeTokens[Number(idx)];
-      if (!item) return "";
+      if (!item) {
+        console.warn("formatBotResponse: no code token found for", match);
+        return "";
+      }
       const langClass = item.lang ? ` class="language-${escapeHtml(item.lang)}"` : "";
       return `<pre><code${langClass}>${escapeHtml(item.code)}</code></pre>`;
     });
@@ -508,26 +514,34 @@
     // ── Step 10: Restore Mermaid blocks ──
     html = html.replace(/@@MERMAID(\d+)@@/g, (match, idx) => {
       const code = mermaidTokens[Number(idx)];
-      if (!code) return "";
+      if (!code) {
+        console.warn("formatBotResponse: no mermaid token found for", match);
+        return "";
+      }
       return `<div class="mermaid-wrap"><div class="mermaid">${escapeHtml(code)}</div></div>`;
     });
 
     // ── Step 11 (LAST): Restore Math — must be the very last replacement ──
     html = html.replace(/@@MATH(\d+)@@/g, (match, idx) => {
       const item = mathTokens[Number(idx)];
-      if (!item) return "";
+      if (!item) {
+        console.warn("formatBotResponse: no math token found for", match);
+        return "";
+      }
       return renderMath(item.expr, item.display);
     });
 
     // Clean up empty paragraphs
     html = html.replace(/<p>\s*<\/p>/g, "");
 
-    // Diagnostic: warn if any placeholders survived
-    if (/@@(?:MATH|CODE|MERMAID)\d+@@/.test(html)) {
+    // Diagnostic & Safety net: warn if any placeholders survived, and strip them
+    const leftover = html.match(/@@(?:MATH|CODE|MERMAID)\d+@@/g);
+    if (leftover) {
       console.warn(
         "formatBotResponse: unreplaced placeholders remain in rendered HTML!",
-        html.match(/@@(?:MATH|CODE|MERMAID)\d+@@/g)
+        leftover
       );
+      html = html.replace(/@@(?:MATH|CODE|MERMAID)\d+@@/g, "");
     }
 
     return html;

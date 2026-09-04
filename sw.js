@@ -1,4 +1,4 @@
-const CACHE_NAME = "ee-scholar-ai-v1";
+const CACHE_NAME = "ee-scholar-ai-v2";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -36,18 +36,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first strategy for app shell to prevent stale JS/CSS code in production
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const networkFetch = fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
