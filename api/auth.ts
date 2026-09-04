@@ -413,7 +413,11 @@ async function handler(req: Request) {
   } catch (error: any) {
     console.error("Auth request failed:", error);
     return Response.json(
-      { error: "Account service is temporarily unavailable. Please try again." },
+      {
+        error: "Account service is temporarily unavailable. Please try again.",
+        detail: error?.message || String(error),
+        stack: error?.stack,
+      },
       { status: 500 },
     );
   }
